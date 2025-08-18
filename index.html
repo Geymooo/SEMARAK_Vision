@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Air Quality Monitoring Network</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-card {
+            text-align: center;
+        }
+
+        .aqi-value {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status-text {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .last-update {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .info-item .label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .info-item .value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .map-container {
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online {
+            background-color: #48bb78;
+        }
+
+        .status-offline {
+            background-color: #e53e3e;
+        }
+
+        .alert-banner {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        .alert-banner.show {
+            display: block;
+        }
+
+        .recommendations {
+            background: #f0f8ff;
+            border-left: 4px solid #4299e1;
+            padding: 15px 20px;
+            border-radius: 0 10px 10px 0;
+            margin-top: 15px;
+        }
+
+        .recommendations h4 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+        }
+
+        .recommendations ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .recommendations li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .recommendations li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .aqi-value {
+                font-size: 3em;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SEMARAK-Vision</h1>
+            <p>Monitoring Kualitas Udara Real-time untuk Lingkungan yang Sehat</p>
+        </div>
+
+        <div class="alert-banner" id="alertBanner">
+            <strong>⚠️ Peringatan Kualitas Udara!</strong>
+            <span id="alertMessage"></span>
+        </div>
+
+        <div class="dashboard">
+            <!-- Current Status Card -->
+            <div class="card status-card">
+                <div class="device-status">
+                    <div class="status-indicator" id="deviceIndicator"></div>
+                    <h3>🏠 Status Saat Ini - RT13 RW15</h3>
+                </div>
+                <div class="aqi-value" id="aqiValue">--</div>
+                <div class="status-text" id="statusText">Memuat...</div>
+                <div class="last-update" id="lastUpdate">Terakhir diperbarui: --</div>
+                
+                <div class="recommendations" id="recommendations">
+                    <h4>Rekomendasi:</h4>
+                    <ul id="recommendationList">
+                        <li>Menunggu data...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Device Info Card -->
+            <div class="card">
+                <h3>📡 Informasi Perangkat</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="label">Device ID</div>
+                        <div class="value" id="deviceId">SEMARAK_RT_001</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Lokasi</div>
+                        <div class="value" id="location">RT13 RW15</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="label">Sensor Value</div>
+                        <div class="value" id="sensorValue">--</div>
+                    </div>
+                    <!-- <div class="info-item">
+                        <div class="label">Koordinat</div>
+                        <div class="value" id="coordinates">-6.2088, 106.8456</div>
+                    </div> -->
+                </div>
+            </div>
+
+            <!-- Chart Card -->
+            <div class="card">
+                <h3>📈 Grafik Kualitas Udara (24 Jam)</h3>
+                <div class="chart-container">
+                    <canvas id="aqiChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Google Air Quality Data -->
+            <div class="card">
+                <h3>🌐 Data Kualitas Udara Regional (Google API)</h3>
+                <div id="googleAirQuality">
+                    <div class="loading" id="googleLoading">
+                        <div class="spinner"></div>
+                        <p>Memuat data kualitas udara regional...</p>
+                    </div>
+                    
+                    <div id="googleAirData" style="display: none;">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="label">AQI Regional</div>
+                                <div class="value" id="googleAQI">--</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="label">Status Regional</div>
+                                <div class="value" id="googleStatus">--</div>
+                            </div>
+                        </div>
+                        
+                        <div id="pollutantData" style="margin-top: 20px;">
+                            <h4 style="margin-bottom: 15px; color: #4a5568;">📊 Detail Polutan:</h4>
+                            <div class="pollutant-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                                <div class="pollutant-item" style="background: #f7fafc; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">PM2.5</div>
+                                    <div id="pm25" style="font-weight: bold; color: #2d3748;">--</div>
+                                </div>
+                                <div class="pollutant-item" style="background: #f7fafc; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">PM10</div>
+                                    <div id="pm10" style="font-weight: bold; color: #2d3748;">--</div>
+                                </div>
+                                <div class="pollutant-item" style="background: #f7fafc; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">O3</div>
+                                    <div id="o3" style="font-weight: bold; color: #2d3748;">--</div>
+                                </div>
+                                <div class="pollutant-item" style="background: #f7fafc; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">NO2</div>
+                                    <div id="no2" style="font-weight: bold; color: #2d3748;">--</div>
+                                </div>
+                                <div class="pollutant-item" style="background: #f7fafc; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">SO2</div>
+                                    <div id="so2" style="font-weight: bold; color: #2d3748;">--</div>
+                                </div>
+                                <div class="pollutant-item" style="background: #f7fafc; padding: 12px; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">CO</div>
+                                    <div id="co" style="font-weight: bold; color: #2d3748;">--</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: #e6fffa; border-radius: 8px;">
+                            <p style="color: #2d3748; font-size: 0.9em;">
+                                🌍 <strong>Data Regional:</strong> <span id="googleDataSource">Jakarta, Indonesia</span><br>
+                                ⏰ <strong>Waktu Update:</strong> <span id="googleUpdateTime">--</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div id="googleError" style="display: none; text-align: center; padding: 20px; color: #e53e3e;">
+                        <p>❌ Gagal memuat data Google Air Quality API</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Pastikan API Key sudah dikonfigurasi dengan benar</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration (sesuaikan dengan config Anda)
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "semarak-vision-default-rtdb.asia-southeast1.firebasedatabase.app",
+            databaseURL: "https://semarak-vision-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "semarak-vision",
+            storageBucket: "semarak-vision.appspot.com",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Chart setup
+        let aqiChart;
+        const chartData = {
+            labels: [],
+            datasets: [{
+                label: 'Air Quality Index',
+                data: [],
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('aqiChart').getContext('2d');
+            aqiChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 500,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value <= 100) return value + ' (Baik)';
+                                    if (value <= 200) return value + ' (Sedang)';
+                                    if (value <= 300) return value + ' (Tidak Sehat)';
+                                    return value + ' (Berbahaya)';
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Get air quality status and color
+        function getAirQualityInfo(aqi) {
+            if (aqi <= 100) {
+                return { status: 'Baik', color: '#00E400' };
+            } else if (aqi <= 200) {
+                return { status: 'Sedang', color: '#FFFF00' };
+            } else if (aqi <= 300) {
+                return { status: 'Tidak Sehat', color: '#FF7E00' };
+            } else {
+                return { status: 'Berbahaya', color: '#FF0000' };
+            }
+        }
+
+        // Get recommendations based on AQI
+        function getRecommendations(aqi) {
+            if (aqi <= 100) {
+                return [
+                    'Kualitas udara baik untuk aktivitas luar ruangan',
+                    'Jendela boleh dibuka untuk sirkulasi udara',
+                    'Olahraga outdoor aman dilakukan'
+                ];
+            } else if (aqi <= 200) {
+                return [
+                    'Batasi aktivitas luar ruangan yang berat',
+                    'Kelompok sensitif sebaiknya mengurangi aktivitas outdoor',
+                    'Gunakan masker jika perlu keluar rumah'
+                ];
+            } else if (aqi <= 300) {
+                return [
+                    'Hindari aktivitas luar ruangan',
+                    'Tutup jendela dan gunakan air purifier',
+                    'Gunakan masker N95 jika harus keluar',
+                    'Kelompok rentan sebaiknya tetap di dalam ruangan'
+                ];
+            } else {
+                return [
+                    'BAHAYA! Jangan keluar rumah kecuali darurat',
+                    'Gunakan air purifier dan tutup semua jendela',
+                    'Konsultasi dokter jika mengalami gejala pernapasan',
+                    'Semua orang sebaiknya tetap di dalam ruangan'
+                ];
+            }
+        }
+
+        // Update UI with new data
+        function updateUI(data) {
+            const info = getAirQualityInfo(data.airQualityIndex);
+            
+            // Update main display
+            document.getElementById('aqiValue').textContent = data.airQualityIndex;
+            document.getElementById('aqiValue').style.color = info.color;
+            document.getElementById('statusText').textContent = info.status;
+            document.getElementById('statusText').style.color = info.color;
+            
+            // Update device info
+            document.getElementById('deviceId').textContent = data.deviceID;
+            document.getElementById('location').textContent = data.location;
+            document.getElementById('sensorValue').textContent = data.rawValue;
+            document.getElementById('coordinates').textContent = `${data.latitude}, ${data.longitude}`;
+            
+            // Update timestamp
+            const timestamp = new Date(data.timestamp * 1000);
+            document.getElementById('lastUpdate').textContent = 
+                `Terakhir diperbarui: ${timestamp.toLocaleString('id-ID')}`;
+            
+            // Update device status
+            const deviceIndicator = document.getElementById('deviceIndicator');
+            const now = Date.now();
+            const dataAge = now - (data.timestamp * 1000);
+            
+            if (dataAge < 60000) { // Less than 1 minute
+                deviceIndicator.className = 'status-indicator status-online';
+            } else {
+                deviceIndicator.className = 'status-indicator status-offline';
+            }
+            
+            // Update recommendations
+            const recommendations = getRecommendations(data.airQualityIndex);
+            const recommendationList = document.getElementById('recommendationList');
+            recommendationList.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
+            
+            // Show alert if necessary
+            if (data.airQualityIndex > 200) {
+                showAlert(info.status, data.airQualityIndex);
+            } else {
+                hideAlert();
+            }
+            
+            // Update chart
+            updateChart(data);
+        }
+
+        // Show alert banner
+        function showAlert(status, aqi) {
+            const banner = document.getElementById('alertBanner');
+            const message = document.getElementById('alertMessage');
+            message.textContent = `Kualitas udara ${status} terdeteksi dengan AQI ${aqi}. Harap waspada!`;
+            banner.classList.add('show');
+        }
+
+        // Hide alert banner
+        function hideAlert() {
+            const banner = document.getElementById('alertBanner');
+            banner.classList.remove('show');
+        }
+
+        // Update chart with new data
+        function updateChart(data) {
+            const timestamp = new Date(data.timestamp * 1000);
+            const timeLabel = timestamp.toLocaleTimeString('id-ID', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            chartData.labels.push(timeLabel);
+            chartData.datasets[0].data.push(data.airQualityIndex);
+            
+            // Keep only last 24 data points
+            if (chartData.labels.length > 24) {
+                chartData.labels.shift();
+                chartData.datasets[0].data.shift();
+            }
+            
+            if (aqiChart) {
+                aqiChart.update();
+            }
+        }
+
+        // Listen for Firebase data
+        function startDataListener() {
+            const deviceRef = database.ref('/airquality/SEMARAK_RT_001/current');
+            
+            deviceRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    try {
+                        const parsedData = JSON.parse(data);
+                        updateUI(parsedData);
+                    } catch (e) {
+                        console.error('Error parsing data:', e);
+                        // Try to use data directly if it's already an object
+                        if (typeof data === 'object') {
+                            updateUI(data);
+                        }
+                    }
+                }
+            });
+            
+            // Load historical data for chart
+            loadHistoricalData();
+        }
+
+        // Load historical data for chart
+        function loadHistoricalData() {
+            const historyRef = database.ref('/history/SEMARAK_RT_001');
+            historyRef.limitToLast(24).on('value', (snapshot) => {
+                const historyData = snapshot.val();
+                if (historyData) {
+                    chartData.labels = [];
+                    chartData.datasets[0].data = [];
+                    
+                    Object.keys(historyData).forEach(timestamp => {
+                        try {
+                            const data = typeof historyData[timestamp] === 'string' 
+                                ? JSON.parse(historyData[timestamp]) 
+                                : historyData[timestamp];
+                            
+                            const time = new Date(parseInt(timestamp) * 1000);
+                            const timeLabel = time.toLocaleTimeString('id-ID', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            });
+                            
+                            chartData.labels.push(timeLabel);
+                            chartData.datasets[0].data.push(data.airQualityIndex);
+                        } catch (e) {
+                            console.error('Error parsing historical data:', e);
+                        }
+                    });
+                    
+                    if (aqiChart) {
+                        aqiChart.update();
+                    }
+                }
+            });
+        }
+
+        // Google Air Quality API configuration
+        const GOOGLE_AIR_QUALITY_API_KEY = 'YAIzaSyBTe4sKKleJYWwTcC4aRIvLeFDV8wBkCZM'; // Ganti dengan API Key Anda
+        const JAKARTA_COORDS = { lat: -6.222870475586725, lng: 106.8926745769288 };
+
+        // Fetch Google Air Quality data
+        async function fetchGoogleAirQuality() {
+            const googleLoading = document.getElementById('googleLoading');
+            const googleAirData = document.getElementById('googleAirData');
+            const googleError = document.getElementById('googleError');
+            
+            try {
+                googleLoading.style.display = 'block';
+                googleAirData.style.display = 'none';
+                googleError.style.display = 'none';
+                
+                const response = await fetch('https://airquality.googleapis.com/v1/currentConditions:lookup?key=' + GOOGLE_AIR_QUALITY_API_KEY, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        universalAqi: true,
+                        location: {
+                            latitude: JAKARTA_COORDS.lat,
+                            longitude: JAKARTA_COORDS.lng
+                        },
+                        extraComputations: [
+                            "HEALTH_RECOMMENDATIONS",
+                            "DOMINANT_POLLUTANT",
+                            "POLLUTANT_CONCENTRATION",
+                            "LOCAL_AQI",
+                            "POLLUTANT_ADDITIONAL_INFO"
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                updateGoogleAirQualityUI(data);
+                
+            } catch (error) {
+                console.error('Error fetching Google Air Quality data:', error);
+                // Show demo data instead
+                showGoogleDemoData();
+            }
+        }
+
+        // Update UI with Google Air Quality data
+        function updateGoogleAirQualityUI(data) {
+            const googleLoading = document.getElementById('googleLoading');
+            const googleAirData = document.getElementById('googleAirData');
+            const googleError = document.getElementById('googleError');
+            
+            googleLoading.style.display = 'none';
+            googleAirData.style.display = 'block';
+            googleError.style.display = 'none';
+            
+            // Update main AQI
+            const universalAqi = data.indexes?.find(index => index.code === 'uaqi');
+            if (universalAqi) {
+                document.getElementById('googleAQI').textContent = universalAqi.aqi;
+                document.getElementById('googleStatus').textContent = universalAqi.category;
+                
+                const info = getAirQualityInfo(universalAqi.aqi);
+                document.getElementById('googleAQI').style.color = info.color;
+                document.getElementById('googleStatus').style.color = info.color;
+            }
+            
+            // Update pollutant data
+            if (data.pollutants) {
+                data.pollutants.forEach(pollutant => {
+                    const elementId = pollutant.code.toLowerCase().replace('.', '');
+                    const element = document.getElementById(elementId);
+                    if (element && pollutant.concentration) {
+                        const value = pollutant.concentration.value;
+                        const unit = pollutant.concentration.units;
+                        element.textContent = `${value.toFixed(1)} ${unit}`;
+                    }
+                });
+            }
+            
+            // Update timestamp
+            document.getElementById('googleUpdateTime').textContent = 
+                new Date().toLocaleString('id-ID');
+        }
+
+        // Show demo data when Google API is not available
+        function showGoogleDemoData() {
+            const googleLoading = document.getElementById('googleLoading');
+            const googleAirData = document.getElementById('googleAirData');
+            const googleError = document.getElementById('googleError');
+            
+            googleLoading.style.display = 'none';
+            googleAirData.style.display = 'block';
+            googleError.style.display = 'none';
+            
+            // Demo data
+            const demoAqi = Math.floor(Math.random() * 150) + 50;
+            const info = getAirQualityInfo(demoAqi);
+            
+            document.getElementById('googleAQI').textContent = demoAqi;
+            document.getElementById('googleAQI').style.color = info.color;
+            document.getElementById('googleStatus').textContent = info.status;
+            document.getElementById('googleStatus').style.color = info.color;
+            
+            // Demo pollutant data
+            document.getElementById('pm25').textContent = (Math.random() * 50 + 10).toFixed(1) + ' µg/m³';
+            document.getElementById('pm10').textContent = (Math.random() * 80 + 20).toFixed(1) + ' µg/m³';
+            document.getElementById('o3').textContent = (Math.random() * 100 + 50).toFixed(1) + ' µg/m³';
+            document.getElementById('no2').textContent = (Math.random() * 60 + 20).toFixed(1) + ' µg/m³';
+            document.getElementById('so2').textContent = (Math.random() * 30 + 5).toFixed(1) + ' µg/m³';
+            document.getElementById('co').textContent = (Math.random() * 2 + 0.5).toFixed(2) + ' mg/m³';
+            
+            document.getElementById('googleUpdateTime').textContent = 
+                new Date().toLocaleString('id-ID');
+        }
+
+        // Initialize everything
+        function init() {
+            initChart();
+            
+            // Try to connect to Firebase
+            try {
+                startDataListener();
+                console.log('Firebase listener started');
+            } catch (error) {
+                console.log('Firebase connection failed, using demo data');
+                // Simulate local data every 30 seconds for demo
+                simulateLocalData();
+                setInterval(simulateLocalData, 30000);
+            }
+            
+            // Load Google Air Quality data
+            fetchGoogleAirQuality();
+            // Refresh Google data every 10 minutes
+            setInterval(fetchGoogleAirQuality, 600000);
+        }
+
+        // Simulate local sensor data for demo purposes
+        function simulateLocalData() {
+            const demoData = {
+                deviceID: "SEMARAK_RT_001",
+                location: "RT13 RW15",
+                timestamp: Math.floor(Date.now() / 1000),
+                rawValue: Math.floor(Math.random() * 4095),
+                airQualityIndex: Math.floor(Math.random() * 300) + 50,
+                status: "",
+                color: "",
+                latitude: -6.2088,
+                longitude: 106.8456
+            };
+            
+            const info = getAirQualityInfo(demoData.airQualityIndex);
+            demoData.status = info.status;
+            demoData.color = info.color;
+            
+            updateUI(demoData);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Auto-refresh page every 10 minutes
+        setInterval(() => {
+            location.reload();
+        }, 600000);
+    </script>
+</body>
+</html>
