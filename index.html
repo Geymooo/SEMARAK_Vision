@@ -968,10 +968,10 @@
                 googleAirData.style.display = 'none';
                 googleError.style.display = 'none';
                 
-                // Check if API key is configured
-                if (GOOGLE_AIR_QUALITY_API_KEY === 'YOUR_ACTUAL_GOOGLE_API_KEY') {
-                    throw new Error('API key not configured');
-                }
+                // // Check if API key is configured
+                // if (GOOGLE_AIR_QUALITY_API_KEY === 'YOUR_ACTUAL_GOOGLE_API_KEY') {
+                //     throw new Error('API key not configured');
+                // }
                 
                 const response = await fetch(`https://airquality.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_AIR_QUALITY_API_KEY}`, {
                     method: 'POST',
