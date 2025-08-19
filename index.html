@@ -959,51 +959,52 @@
 
         // Google Air Quality API (valid request body)
         async function fetchGoogleAirQuality() {
-    const googleLoading = document.getElementById('googleLoading');
-    const googleAirData = document.getElementById('googleAirData');
-    const googleError = document.getElementById('googleError');
+            const googleLoading = document.getElementById('googleLoading');
+            const googleAirData = document.getElementById('googleAirData');
+            const googleError = document.getElementById('googleError');
 
-    try {
-        googleLoading.style.display = 'block';
-        googleAirData.style.display = 'none';
-        googleError.style.display = 'none';
+            try {
+                googleLoading.style.display = 'block';
+                googleAirData.style.display = 'none';
+                googleError.style.display = 'none';
 
-        const response = await fetch(
-            `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_AIR_QUALITY_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    location: {
-                        latitude: RT_LOCATION.lat,
-                        longitude: RT_LOCATION.lng
-                    },
-                    universal_aqi: true,
-                    extraComputations: [
-                        "HEALTH_RECOMMENDATIONS",
-                        "POLLUTANT_CONCENTRATION",
-                        "LOCAL_AQI",
-                        "POLLUTANT_ADDITIONAL_INFO"
-                    ]
-                })
+                const response = await fetch(
+                    `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_AIR_QUALITY_API_KEY}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            location: {
+                                latitude: RT_LOCATION.lat,
+                                longitude: RT_LOCATION.lng
+                            },
+                            universal_aqi: true,
+                            extraComputations: [
+                                "HEALTH_RECOMMENDATIONS",
+                                "POLLUTANT_CONCENTRATION",
+                                "LOCAL_AQI",
+                                "POLLUTANT_ADDITIONAL_INFO"
+                            ]
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                updateGoogleAirQualityUI(data);
+
+            } catch (error) {
+                console.error('Error fetching Google Air Quality data:', error);
+                googleLoading.style.display = 'none';
+                googleAirData.style.display = 'none';
+                googleError.style.display = 'block';
             }
-        );
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        const data = await response.json();
-        updateGoogleAirQualityUI(data);
-
-    } catch (err) {
-        console.error('Error fetching Google Air Quality data:', err);
-        googleLoading.style.display = 'none';
-        googleAirData.style.display = 'none';
-        googleError.style.display = 'block';
-    }
-}
-
 
 
         function updateGoogleAirQualityUI(data) {
