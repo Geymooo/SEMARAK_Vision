@@ -18,7 +18,7 @@ String TELEGRAM_CHAT_ID = "-1002964500193";
 
 // Pin definitions
 #define MQ135_PIN 34   // Analog pin untuk MQ135 (ESP32)
-#define BUZZER_PIN 2
+#define BUZZER_PIN 25
 #define LED_GREEN 4
 #define LED_RED 5
 

@@ -640,6 +640,10 @@
         </div>
 
         <div class="main-content">
+            <div class="chart-container" style="display:none;">
+                <canvas id="airQualityChart" width="400" height="200"></canvas>
+            </div>
+
             <div class="google-air-section">
                 <h3>🌐 Data Regional Google Air Quality API</h3>
                 <div id="googleAirQuality">
@@ -707,7 +711,7 @@
                             <div class="google-footer-content">
                                 <div class="google-footer-item">
                                     <span>🌍</span>
-                                    <span><strong>Lokasi:</strong> <span id="googleDataSource">Jakarta, Indonesia</span></span>
+                                    <span><strong>Lokasi:</strong> <span id="googleDataSource">Jakarta Timur, Indonesia</span></span>
                                 </div>
                                 <div class="google-footer-item">
                                     <span>⏰</span>
@@ -715,7 +719,7 @@
                                 </div>
                                 <div class="google-footer-item">
                                     <span>🔄</span>
-                                    <span><strong>Refresh:</strong> <span id="googleNextRefresh">--</span></span>
+                                    <span><strong>Akan di-Refresh:</strong> <span id="googleNextRefresh">--</span></span>
                                 </div>
                             </div>
                         </div>
@@ -861,7 +865,7 @@
                 const timeDiff = now - lastDataReceived;
                 
                 // If no data received for 5 seconds, mark device as offline
-                if (timeDiff > 5000) {
+                if (timeDiff > 35000) {
                     updateDeviceStatus('offline');
                 } else {
                     updateDeviceStatus('online');
@@ -933,6 +937,7 @@
                                 display: true,
                                 text: 'AQI'
                             },
+                            min: 0,
                             max: 500
                         },
                         y1: {
