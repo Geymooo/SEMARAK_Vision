@@ -16,6 +16,171 @@
             box-sizing: border-box;
         }
 
+        .camera-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out;
+            margin-bottom: 25px;
+        }
+
+        .camera-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3em;
+        }
+
+        .camera-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .camera-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .camera-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .camera-btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .camera-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+        }
+
+        .camera-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            background: #000;
+        }
+
+        .camera-stream {
+            width: 100%;
+            height: auto;
+            max-height: 600px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .camera-placeholder {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .camera-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .camera-status.online {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+            border: 2px solid #27ae60;
+        }
+
+        .camera-status.offline {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border: 2px solid #e74c3c;
+        }
+
+        .camera-status.loading {
+            background: rgba(243, 156, 18, 0.1);
+            color: #f39c12;
+            border: 2px solid #f39c12;
+        }
+
+        .camera-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .camera-info-item {
+            text-align: center;
+        }
+
+        .camera-info-item .label {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .camera-info-item .value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #1e293b;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -631,6 +796,59 @@
             </div>
         </div>
 
+        <!-- Camera Section - Add this after the live-data div -->
+        <div class="camera-section">
+            <h3>📹 Live Camera Feed - ESP32-CAM</h3>
+
+            <div class="camera-controls">
+                <input type="text" class="camera-input" id="cameraIpInput"
+                    placeholder="Masukkan IP ESP32-CAM (contoh: 192.168.1.100)" value="192.168.1.100">
+                <button class="camera-btn" onclick="connectCamera()" id="connectBtn">
+                    🔗 Connect Camera
+                </button>
+                <button class="camera-btn" onclick="disconnectCamera()" id="disconnectBtn" disabled>
+                    🔌 Disconnect
+                </button>
+            </div>
+
+            <div class="camera-container">
+                <img id="cameraStream" class="camera-stream" style="display: none;" alt="ESP32-CAM Live Stream">
+                <div class="camera-overlay" id="cameraOverlay">
+                    <div class="camera-placeholder">
+                        <h3>📱 ESP32-CAM Live Stream</h3>
+                        <p>Masukkan IP address ESP32-CAM dan klik "Connect Camera"</p>
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #95a5a6;">
+                            Pastikan ESP32-CAM sudah terhubung ke jaringan WiFi yang sama
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="camera-status offline" id="cameraStatus">
+                <div class="status-dot"></div>
+                <span>Camera Offline</span>
+            </div>
+
+            <div class="camera-info">
+                <div class="camera-info-item">
+                    <div class="label">Stream URL</div>
+                    <div class="value" id="streamUrl">Not Connected</div>
+                </div>
+                <div class="camera-info-item">
+                    <div class="label">Resolution</div>
+                    <div class="value" id="streamResolution">VGA (640x480)</div>
+                </div>
+                <div class="camera-info-item">
+                    <div class="label">Frame Rate</div>
+                    <div class="value" id="streamFramerate">~30 FPS</div>
+                </div>
+                <div class="camera-info-item">
+                    <div class="label">Flash LED</div>
+                    <div class="value" id="flashStatus">Always ON</div>
+                </div>
+            </div>
+        </div>
+
         <div class="status-overview">
             <div class="status-card">
                 <h3>🌬️ Status Udara</h3>
@@ -850,11 +1068,26 @@
             benzene: []
         };
 
+        // =========================
+        // Camera Variables (ditambah)
+        // =========================
+        let cameraConnected = false;
+        let currentCameraIP = '';
+        let cameraCheckInterval = null;
+
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function () {
             initializeChart();
             initializeFirebaseConnection();
             fetchGoogleAirQuality();
+
+            // Enter untuk konek kamera
+            const cameraInput = document.getElementById('cameraIpInput');
+            if (cameraInput) {
+                cameraInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') connectCamera();
+                });
+            }
 
             // Auto refresh every 30 seconds
             setInterval(refreshData, 30000);
@@ -914,7 +1147,7 @@
                 const now = Date.now();
                 const timeDiff = now - lastDataReceived;
 
-                // If no data received for 5 seconds, mark device as offline
+                // If no data received for 35 seconds, mark device as offline
                 if (timeDiff > 35000) {
                     updateDeviceStatus('offline');
                 } else {
@@ -974,19 +1207,13 @@
                     scales: {
                         x: {
                             display: true,
-                            title: {
-                                display: true,
-                                text: 'Waktu'
-                            }
+                            title: { display: true, text: 'Waktu' }
                         },
                         y: {
                             type: 'linear',
                             display: true,
                             position: 'left',
-                            title: {
-                                display: true,
-                                text: 'AQI'
-                            },
+                            title: { display: true, text: 'AQI' },
                             min: 0,
                             max: 500
                         },
@@ -994,13 +1221,8 @@
                             type: 'linear',
                             display: true,
                             position: 'right',
-                            title: {
-                                display: true,
-                                text: 'CO₂ (ppm)'
-                            },
-                            grid: {
-                                drawOnChartArea: false,
-                            },
+                            title: { display: true, text: 'CO₂ (ppm)' },
+                            grid: { drawOnChartArea: false },
                         }
                     }
                 }
@@ -1261,14 +1483,9 @@
                     `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_AIR_QUALITY_API_KEY}`,
                     {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            location: {
-                                latitude: RT_LOCATION.lat,
-                                longitude: RT_LOCATION.lng
-                            },
+                            location: { latitude: RT_LOCATION.lat, longitude: RT_LOCATION.lng },
                             universal_aqi: true,
                             extraComputations: [
                                 "HEALTH_RECOMMENDATIONS",
@@ -1280,9 +1497,7 @@
                     }
                 );
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                 const data = await response.json();
                 updateGoogleAirQualityUI(data);
@@ -1512,12 +1727,164 @@
             return Math.min(aqi, 500); // Max AQI 500
         }
 
+        // =========================
+        // Camera Functions (ditambah)
+        // =========================
+        function connectCamera() {
+            const ipInput = document.getElementById('cameraIpInput');
+            const ip = ipInput.value.trim();
+
+            if (!ip) {
+                alert('Masukkan IP address ESP32-CAM terlebih dahulu');
+                return;
+            }
+
+            if (!isValidIP(ip)) {
+                alert('Format IP address tidak valid. Contoh: 192.168.1.100');
+                return;
+            }
+
+            currentCameraIP = ip;
+            updateCameraStatus('loading', 'Connecting...');
+
+            const streamUrl = `http://${ip}:81/stream`;
+            const cameraStream = document.getElementById('cameraStream');
+            const cameraOverlay = document.getElementById('cameraOverlay');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            // Update UI
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+
+            // Set stream source
+            cameraStream.src = streamUrl;
+
+            // Handle stream load
+            cameraStream.onload = function () {
+                cameraConnected = true;
+                cameraOverlay.style.display = 'none';
+                cameraStream.style.display = 'block';
+                updateCameraStatus('online', 'Camera Online');
+                updateStreamInfo(streamUrl);
+                startCameraMonitoring();
+            };
+
+            cameraStream.onerror = function () {
+                handleCameraError();
+            };
+
+            // Set timeout for connection
+            setTimeout(() => {
+                if (!cameraConnected) {
+                    handleCameraError();
+                }
+            }, 10000); // 10 second timeout
+        }
+
+        function disconnectCamera() {
+            const cameraStream = document.getElementById('cameraStream');
+            const cameraOverlay = document.getElementById('cameraOverlay');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            // Stop camera monitoring
+            if (cameraCheckInterval) {
+                clearInterval(cameraCheckInterval);
+                cameraCheckInterval = null;
+            }
+
+            // Reset UI
+            cameraStream.src = '';
+            cameraStream.style.display = 'none';
+            cameraOverlay.style.display = 'flex';
+
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+
+            cameraConnected = false;
+            currentCameraIP = '';
+
+            updateCameraStatus('offline', 'Camera Offline');
+            updateStreamInfo('Not Connected');
+        }
+
+        function handleCameraError() {
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+
+            cameraConnected = false;
+            updateCameraStatus('offline', 'Connection Failed');
+
+            alert(`Gagal terhubung ke ESP32-CAM di ${currentCameraIP}. Pastikan:\n` +
+                `1. ESP32-CAM sudah menyala\n` +
+                `2. Terhubung ke WiFi yang sama\n` +
+                `3. IP address benar\n` +
+                `4. Port 81 tidak terblokir`);
+        }
+
+        function updateCameraStatus(status, text) {
+            const cameraStatus = document.getElementById('cameraStatus');
+            const statusText = cameraStatus.querySelector('span');
+
+            // Remove all status classes
+            cameraStatus.classList.remove('online', 'offline', 'loading');
+
+            // Add new status
+            cameraStatus.classList.add(status);
+            statusText.textContent = text;
+        }
+
+        function updateStreamInfo(url) {
+            document.getElementById('streamUrl').textContent =
+                url === 'Not Connected' ? url : currentCameraIP + ':81/stream';
+        }
+
+        function startCameraMonitoring() {
+            // Check camera connection every 5 seconds
+            cameraCheckInterval = setInterval(() => {
+                if (cameraConnected && currentCameraIP) {
+                    // Simple ping by trying to load a small image from camera
+                    const testImg = new Image();
+                    testImg.onload = function () {
+                        // Camera is responsive
+                        if (!cameraConnected) {
+                            updateCameraStatus('online', 'Camera Online');
+                            cameraConnected = true;
+                        }
+                    };
+                    testImg.onerror = function () {
+                        // Camera is not responsive
+                        if (cameraConnected) {
+                            updateCameraStatus('offline', 'Camera Disconnected');
+                            cameraConnected = false;
+                        }
+                    };
+                    testImg.src = `http://${currentCameraIP}/capture?t=${Date.now()}`;
+                }
+            }, 5000);
+        }
+
+        function isValidIP(ip) {
+            const regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!regex.test(ip)) return false;
+
+            const parts = ip.split('.');
+            return parts.every(part => {
+                const num = parseInt(part, 10);
+                return num >= 0 && num <= 255;
+            });
+        }
+
         // Auto-refresh page every 30 minutes
         setInterval(() => {
             location.reload();
         }, 1800000);
 
-        // Initialize demo data on load
+        // Initialize demo data on load (fallback)
         setTimeout(() => {
             if (!currentData) {
                 simulateLocalData();
