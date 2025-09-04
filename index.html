@@ -22,111 +22,6 @@
             color: #333;
         }
 
-        .live-stream-section {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            animation: fadeInUp 0.8s ease-out;
-            margin-bottom: 25px;
-        }
-
-        .stream-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .stream-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        #cameraIP {
-            padding: 12px 20px;
-            border: 2px solid #3498db;
-            border-radius: 25px;
-            font-size: 1em;
-            text-align: center;
-            min-width: 200px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        #cameraIP:focus {
-            border-color: #2980b9;
-            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
-        }
-
-        .connect-btn {
-            background: linear-gradient(45deg, #27ae60, #229954);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1em;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
-        }
-
-        .connect-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
-        }
-
-        .connect-btn.disconnect {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-        }
-
-        .connect-btn.disconnect:hover {
-            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
-        }
-
-        .stream-viewer {
-            position: relative;
-            background: #f8f9fa;
-            border: 2px dashed #dee2e6;
-            border-radius: 10px;
-            overflow: hidden;
-            aspect-ratio: 4/3;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 250px;
-            /* Lebih kecil untuk layout samping */
-        }
-
-        .stream-viewer img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        .stream-loading {
-            text-align: center;
-            color: #6c757d;
-        }
-
-        .stream-error {
-            text-align: center;
-            color: #e74c3c;
-            padding: 20px;
-        }
-
-        .stream-placeholder {
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-        }
-
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -329,8 +224,7 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            /* Data utama lebih besar, streaming lebih kecil */
+            grid-template-columns: 1fr;
             gap: 25px;
             margin-bottom: 25px;
         }
@@ -685,22 +579,6 @@
         }
 
         @media (max-width: 768px) {
-            .stream-controls {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            #cameraIP {
-                min-width: 250px;
-                width: 100%;
-                max-width: 300px;
-                margin-top: 15px;
-            }
-
-            .stream-viewer {
-                min-height: 200px;
-            }
-
             .main-content {
                 grid-template-columns: 1fr;
             }
@@ -748,30 +626,6 @@
                 <div class="firebase-status firebase-connecting" id="firebaseStatus">
                     <div class="status-dot" id="firebaseDot"></div>
                     <span id="firebaseStatusText">Menghubungkan...</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="live-stream-section">
-            <h3>📹 Live Streaming</h3>
-            <div class="stream-container">
-                <div class="stream-controls">
-                    <input type="text" id="cameraIP" placeholder=" default: 192.168.1.100" value="">
-                    <button class="connect-btn" id="connectBtn" onclick="toggleConnection()">Connect</button>
-                </div>
-                <div class="stream-viewer" id="streamViewer">
-                    <img id="streamImage" src="" alt="ESP32-CAM Live Stream" style="display: none;">
-                    <div class="stream-loading" id="streamLoading" style="display: none;">
-                        <div class="spinner"></div>
-                        <p>Connecting to camera...</p>
-                    </div>
-                    <div class="stream-error" id="streamError" style="display: none;">
-                        <p>❌ Cannot connect to camera</p>
-                        <p>Check IP address and network connection</p>
-                    </div>
-                    <div class="stream-placeholder" id="streamPlaceholder">
-                        <p>Enter ESP32-CAM IP address and click Connect</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -947,111 +801,6 @@
     </div>
 
     <script>
-
-        // ESP32-CAM Configuration
-        let isConnected = false;
-        let currentStreamUrl = '';
-
-        function toggleConnection() {
-            const connectBtn = document.getElementById('connectBtn');
-            const ipInput = document.getElementById('cameraIP');
-
-            if (!isConnected) {
-                const ip = ipInput.value.trim();
-                if (!ip) {
-                    alert('Please enter ESP32-CAM IP address');
-                    return;
-                }
-                connectToCamera(ip);
-            } else {
-                disconnectCamera();
-            }
-        }
-
-        function connectToCamera(ip) {
-            const connectBtn = document.getElementById('connectBtn');
-            const streamImage = document.getElementById('streamImage');
-            const streamLoading = document.getElementById('streamLoading');
-            const streamError = document.getElementById('streamError');
-            const streamPlaceholder = document.getElementById('streamPlaceholder');
-            const ipInput = document.getElementById('cameraIP');
-
-            // Show loading
-            streamPlaceholder.style.display = 'none';
-            streamError.style.display = 'none';
-            streamImage.style.display = 'none';
-            streamLoading.style.display = 'block';
-
-            // Update button
-            connectBtn.textContent = 'Connecting...';
-            connectBtn.disabled = true;
-            ipInput.disabled = true;
-
-            // Create stream URL
-            currentStreamUrl = `http://${ip}:81/stream`;
-
-            streamImage.onload = function () {
-                streamLoading.style.display = 'none';
-                streamImage.style.display = 'block';
-
-                connectBtn.textContent = 'Disconnect';
-                connectBtn.classList.add('disconnect');
-                connectBtn.disabled = false;
-
-                isConnected = true;
-            };
-
-            streamImage.onerror = function () {
-                streamLoading.style.display = 'none';
-                streamError.style.display = 'block';
-
-                connectBtn.textContent = 'Connect';
-                connectBtn.disabled = false;
-                ipInput.disabled = false;
-
-                isConnected = false;
-            };
-
-            // Set source with cache buster
-            streamImage.src = currentStreamUrl + '?t=' + new Date().getTime();
-        }
-
-        function disconnectCamera() {
-            const connectBtn = document.getElementById('connectBtn');
-            const streamImage = document.getElementById('streamImage');
-            const streamLoading = document.getElementById('streamLoading');
-            const streamError = document.getElementById('streamError');
-            const streamPlaceholder = document.getElementById('streamPlaceholder');
-            const ipInput = document.getElementById('cameraIP');
-
-            // Stop stream
-            streamImage.src = '';
-            streamImage.style.display = 'none';
-            streamLoading.style.display = 'none';
-            streamError.style.display = 'none';
-            streamPlaceholder.style.display = 'block';
-
-            // Reset button
-            connectBtn.textContent = 'Connect';
-            connectBtn.classList.remove('disconnect');
-            connectBtn.disabled = false;
-            ipInput.disabled = false;
-
-            isConnected = false;
-            currentStreamUrl = '';
-        }
-
-        // Auto-reconnect if stream fails (optional)
-        setInterval(() => {
-            if (isConnected && currentStreamUrl) {
-                const streamImage = document.getElementById('streamImage');
-                if (streamImage.src) {
-                    // Refresh stream to prevent timeout
-                    streamImage.src = currentStreamUrl + '?t=' + new Date().getTime();
-                }
-            }
-        }, 30000); // Every 30 seconds
-
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyB3_N3pDJpF9mUYJrRH-Y8cLEXNjZh1EP8",
