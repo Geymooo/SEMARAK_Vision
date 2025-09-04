@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -19,6 +21,111 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
+        }
+
+        .live-stream-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out;
+            margin-bottom: 25px;
+        }
+
+        .stream-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stream-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        #cameraIP {
+            padding: 12px 20px;
+            border: 2px solid #3498db;
+            border-radius: 25px;
+            font-size: 1em;
+            text-align: center;
+            min-width: 200px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #cameraIP:focus {
+            border-color: #2980b9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .connect-btn {
+            background: linear-gradient(45deg, #27ae60, #229954);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .connect-btn.disconnect {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .connect-btn.disconnect:hover {
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .stream-viewer {
+            position: relative;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 250px;
+            /* Lebih kecil untuk layout samping */
+        }
+
+        .stream-viewer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .stream-loading {
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .stream-error {
+            text-align: center;
+            color: #e74c3c;
+            padding: 20px;
+        }
+
+        .stream-placeholder {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
         }
 
         .container {
@@ -42,7 +149,7 @@
             color: #2c3e50;
             margin-bottom: 8px;
             font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .header p {
@@ -135,14 +242,28 @@
             font-size: 2.2em;
             font-weight: bold;
             margin: 15px 0;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        .status-good { color: #27ae60; }
-        .status-moderate { color: #f39c12; }
-        .status-unhealthy { color: #e74c3c; }
-        .status-dangerous { color: #8e44ad; }
-        .status-hazardous { color: #7e0023; }
+        .status-good {
+            color: #27ae60;
+        }
+
+        .status-moderate {
+            color: #f39c12;
+        }
+
+        .status-unhealthy {
+            color: #e74c3c;
+        }
+
+        .status-dangerous {
+            color: #8e44ad;
+        }
+
+        .status-hazardous {
+            color: #7e0023;
+        }
 
         .device-status-indicator {
             display: flex;
@@ -159,8 +280,13 @@
             animation: pulse 2s infinite;
         }
 
-        .status-online { background-color: #27ae60; }
-        .status-offline { background-color: #e74c3c; }
+        .status-online {
+            background-color: #27ae60;
+        }
+
+        .status-offline {
+            background-color: #e74c3c;
+        }
 
         .live-data {
             display: grid;
@@ -204,7 +330,8 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 2fr 1fr;
+            /* Data utama lebih besar, streaming lebih kecil */
             gap: 25px;
             margin-bottom: 25px;
         }
@@ -488,6 +615,7 @@
                 opacity: 0;
                 transform: translateY(-30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -499,6 +627,7 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -510,6 +639,7 @@
                 opacity: 0;
                 transform: translateX(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -517,18 +647,38 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
 
         @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0.3;
+            }
         }
 
         .connection-warning {
@@ -536,14 +686,30 @@
         }
 
         @media (max-width: 768px) {
+            .stream-controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            #cameraIP {
+                min-width: 250px;
+                width: 100%;
+                max-width: 300px;
+                margin-top: 15px;
+            }
+
+            .stream-viewer {
+                min-height: 200px;
+            }
+
             .main-content {
                 grid-template-columns: 1fr;
             }
-            
+
             .status-overview {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
+
             .live-data {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -572,6 +738,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -582,6 +749,30 @@
                 <div class="firebase-status firebase-connecting" id="firebaseStatus">
                     <div class="status-dot" id="firebaseDot"></div>
                     <span id="firebaseStatusText">Menghubungkan...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="live-stream-section">
+            <h3>📹 Live Streaming</h3>
+            <div class="stream-container">
+                <div class="stream-controls">
+                    <input type="text" id="cameraIP" placeholder=" default: 192.168.1.100" value="">
+                    <button class="connect-btn" id="connectBtn" onclick="toggleConnection()">Connect</button>
+                </div>
+                <div class="stream-viewer" id="streamViewer">
+                    <img id="streamImage" src="" alt="ESP32-CAM Live Stream" style="display: none;">
+                    <div class="stream-loading" id="streamLoading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Connecting to camera...</p>
+                    </div>
+                    <div class="stream-error" id="streamError" style="display: none;">
+                        <p>❌ Cannot connect to camera</p>
+                        <p>Check IP address and network connection</p>
+                    </div>
+                    <div class="stream-placeholder" id="streamPlaceholder">
+                        <p>Enter ESP32-CAM IP address and click Connect</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -651,7 +842,7 @@
                         <div class="spinner"></div>
                         <p>Memuat data kualitas udara regional...</p>
                     </div>
-                    
+
                     <div class="google-air-data" id="googleAirData">
                         <div class="google-summary">
                             <div class="google-summary-card">
@@ -670,7 +861,7 @@
                                 <div class="category">Saran Kesehatan</div>
                             </div>
                         </div>
-                        
+
                         <div class="pollutant-section">
                             <h4>📊 Detail Konsentrasi Polutan Regional</h4>
                             <div class="pollutant-grid">
@@ -706,12 +897,13 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="google-footer">
                             <div class="google-footer-content">
                                 <div class="google-footer-item">
                                     <span>🌍</span>
-                                    <span><strong>Lokasi:</strong> <span id="googleDataSource">Jakarta Timur, Indonesia</span></span>
+                                    <span><strong>Lokasi:</strong> <span id="googleDataSource">Jakarta Timur,
+                                            Indonesia</span></span>
                                 </div>
                                 <div class="google-footer-item">
                                     <span>⏰</span>
@@ -719,26 +911,28 @@
                                 </div>
                                 <div class="google-footer-item">
                                     <span>🔄</span>
-                                    <span><strong>Akan di-Refresh:</strong> <span id="googleNextRefresh">--</span></span>
+                                    <span><strong>Akan di-Refresh:</strong> <span
+                                            id="googleNextRefresh">--</span></span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="googleError" class="api-error" style="display: none;">
                         <h4>⚠️ Koneksi API Terputus</h4>
                         <p>Tidak dapat mengakses Google Air Quality API</p>
-                        <p style="font-size: 0.9em; margin-top: 10px;">Periksa koneksi internet atau konfigurasi API key</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Periksa koneksi internet atau konfigurasi API key
+                        </p>
                     </div>
                 </div>
             </div>
 
             <div class="alerts">
-                <h3>🚨 Notifikasi & Peringatan</h3>
+                <h3>Peringatan</h3>
                 <div id="alertsList">
                     <div class="loading">Memuat peringatan...</div>
                 </div>
-                
+
                 <div class="recommendations" id="recommendations">
                     <h4>💡 Rekomendasi Berdasarkan Kualitas Udara:</h4>
                     <ul id="recommendationList">
@@ -754,6 +948,115 @@
     </div>
 
     <script>
+        // Aktifkan App Check dengan reCAPTCHA v3
+        const appCheck = firebase.appCheck();
+        appCheck.activate('6LdWX70rAAAAAMQXHl0CSQjGE8nIsEX0wxwolXdd', true);
+        // 'true' = auto refresh token secara berkala
+
+        // ESP32-CAM Configuration
+        let isConnected = false;
+        let currentStreamUrl = '';
+
+        function toggleConnection() {
+            const connectBtn = document.getElementById('connectBtn');
+            const ipInput = document.getElementById('cameraIP');
+
+            if (!isConnected) {
+                const ip = ipInput.value.trim();
+                if (!ip) {
+                    alert('Please enter ESP32-CAM IP address');
+                    return;
+                }
+                connectToCamera(ip);
+            } else {
+                disconnectCamera();
+            }
+        }
+
+        function connectToCamera(ip) {
+            const connectBtn = document.getElementById('connectBtn');
+            const streamImage = document.getElementById('streamImage');
+            const streamLoading = document.getElementById('streamLoading');
+            const streamError = document.getElementById('streamError');
+            const streamPlaceholder = document.getElementById('streamPlaceholder');
+            const ipInput = document.getElementById('cameraIP');
+
+            // Show loading
+            streamPlaceholder.style.display = 'none';
+            streamError.style.display = 'none';
+            streamImage.style.display = 'none';
+            streamLoading.style.display = 'block';
+
+            // Update button
+            connectBtn.textContent = 'Connecting...';
+            connectBtn.disabled = true;
+            ipInput.disabled = true;
+
+            // Create stream URL
+            currentStreamUrl = `http://${ip}:81/stream`;
+
+            streamImage.onload = function () {
+                streamLoading.style.display = 'none';
+                streamImage.style.display = 'block';
+
+                connectBtn.textContent = 'Disconnect';
+                connectBtn.classList.add('disconnect');
+                connectBtn.disabled = false;
+
+                isConnected = true;
+            };
+
+            streamImage.onerror = function () {
+                streamLoading.style.display = 'none';
+                streamError.style.display = 'block';
+
+                connectBtn.textContent = 'Connect';
+                connectBtn.disabled = false;
+                ipInput.disabled = false;
+
+                isConnected = false;
+            };
+
+            // Set source with cache buster
+            streamImage.src = currentStreamUrl + '?t=' + new Date().getTime();
+        }
+
+        function disconnectCamera() {
+            const connectBtn = document.getElementById('connectBtn');
+            const streamImage = document.getElementById('streamImage');
+            const streamLoading = document.getElementById('streamLoading');
+            const streamError = document.getElementById('streamError');
+            const streamPlaceholder = document.getElementById('streamPlaceholder');
+            const ipInput = document.getElementById('cameraIP');
+
+            // Stop stream
+            streamImage.src = '';
+            streamImage.style.display = 'none';
+            streamLoading.style.display = 'none';
+            streamError.style.display = 'none';
+            streamPlaceholder.style.display = 'block';
+
+            // Reset button
+            connectBtn.textContent = 'Connect';
+            connectBtn.classList.remove('disconnect');
+            connectBtn.disabled = false;
+            ipInput.disabled = false;
+
+            isConnected = false;
+            currentStreamUrl = '';
+        }
+
+        // Auto-reconnect if stream fails (optional)
+        setInterval(() => {
+            if (isConnected && currentStreamUrl) {
+                const streamImage = document.getElementById('streamImage');
+                if (streamImage.src) {
+                    // Refresh stream to prevent timeout
+                    streamImage.src = currentStreamUrl + '?t=' + new Date().getTime();
+                }
+            }
+        }, 30000); // Every 30 seconds
+
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyB3_N3pDJpF9mUYJrRH-Y8cLEXNjZh1EP8",
@@ -801,28 +1104,28 @@
         };
 
         // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             initializeChart();
             initializeFirebaseConnection();
             fetchGoogleAirQuality();
-            
+
             // Auto refresh every 30 seconds
             setInterval(refreshData, 30000);
             // Refresh Google data every 10 minutes
             setInterval(fetchGoogleAirQuality, 600000);
-            
+
             // Check connection status every 1 second
             setInterval(checkConnectionStatus, 1000);
         });
 
         function initializeFirebaseConnection() {
             updateFirebaseStatus('connecting', 'Menghubungkan...');
-            
+
             // Monitor Firebase connection
             const connectedRef = database.ref('.info/connected');
             connectedRef.on('value', (snapshot) => {
                 firebaseConnected = snapshot.val() === true;
-                
+
                 if (firebaseConnected) {
                     updateFirebaseStatus('connected', 'Terhubung');
                     startRealtimeUpdates();
@@ -836,12 +1139,12 @@
             const statusElement = document.getElementById('firebaseStatus');
             const dotElement = document.getElementById('firebaseDot');
             const textElement = document.getElementById('firebaseStatusText');
-            
+
             // Remove all status classes
             statusElement.classList.remove('firebase-connected', 'firebase-disconnected', 'firebase-connecting');
             dotElement.classList.remove('status-online', 'status-offline');
-            
-            switch(status) {
+
+            switch (status) {
                 case 'connected':
                     statusElement.classList.add('firebase-connected');
                     dotElement.classList.add('status-online');
@@ -855,7 +1158,7 @@
                     dotElement.classList.add('status-offline');
                     break;
             }
-            
+
             textElement.textContent = text;
         }
 
@@ -863,7 +1166,7 @@
             if (lastDataReceived) {
                 const now = Date.now();
                 const timeDiff = now - lastDataReceived;
-                
+
                 // If no data received for 5 seconds, mark device as offline
                 if (timeDiff > 35000) {
                     updateDeviceStatus('offline');
@@ -877,7 +1180,7 @@
             const deviceDot = document.getElementById('deviceDot');
             const deviceStatusText = document.getElementById('deviceStatusText');
             const sensorStatus = document.getElementById('sensorStatus');
-            
+
             if (status === 'online') {
                 deviceDot.className = 'status-dot status-online';
                 deviceStatusText.textContent = 'Online';
@@ -967,7 +1270,7 @@
                     lastDataReceived = Date.now();
                     updateCurrentDataDisplay(data);
                     updateAlerts(data);
-                    
+
                     // Clear any existing timeout
                     if (dataTimeoutTimer) {
                         clearTimeout(dataTimeoutTimer);
@@ -989,57 +1292,45 @@
             // Update status cards
             document.getElementById('airStatus').textContent = data.status || 'Unknown';
             document.getElementById('aqiValue').textContent = data.aqi || '-';
-            
+
             // Color code AQI
             const aqiElement = document.getElementById('aqiValue');
             const statusElement = document.getElementById('airStatus');
             const aqi = data.aqi || 0;
-            
+
             if (aqi <= 50) {
                 aqiElement.className = 'status-value status-good';
                 statusElement.className = 'status-value status-good';
             } else if (aqi <= 100) {
-                aqiElement.className = 'status-value status-moderate';
-                statusElement.className = 'status-value status-moderate';
-            } else if (aqi <= 200) {
+                aqiElement.className = 'status-value status-moderate'; statusElement.className = 'status-value status-moderate';
+            }
+            else if (aqi <= 200) {
                 aqiElement.className = 'status-value status-unhealthy';
                 statusElement.className = 'status-value status-unhealthy';
             } else if (aqi <= 300) {
-                aqiElement.className = 'status-value status-dangerous';
-                statusElement.className = 'status-value status-dangerous';
+                aqiElement.className = 'status-value status-dangerous'; statusElement.className = 'status-value status-dangerous';
             } else {
                 aqiElement.className = 'status-value status-hazardous';
                 statusElement.className = 'status-value status-hazardous';
-            }
-
-            // Update gas readings
+            } // Update gas readings
             document.getElementById('co2Value').textContent = parseFloat(data.co2_ppm || 0).toFixed(1);
             document.getElementById('nh3Value').textContent = parseFloat(data.nh3_ppm || 0).toFixed(1);
             document.getElementById('alcoholValue').textContent = parseFloat(data.alcohol_ppm || 0).toFixed(1);
             document.getElementById('benzeneValue').textContent = parseFloat(data.benzene_ppm || 0).toFixed(2);
-            document.getElementById('rawValue').textContent = data.raw_sensor_value || '-';
-
-            // Update timestamps
-            const timestamp = new Date(data.timestamp);
+            document.getElementById('rawValue').textContent = data.raw_sensor_value || '-'; // Update timestamps const
+            timestamp = new Date(data.timestamp);
             document.getElementById('lastUpdate').textContent = timestamp.toLocaleTimeString('id-ID');
             document.getElementById('updateTime').textContent = timestamp.toLocaleString('id-ID');
-        }
-
-        function updateChartData(historyData) {
-            chartData.labels = [];
-            chartData.aqi = [];
-            chartData.co2 = [];
-            chartData.nh3 = [];
-            chartData.alcohol = [];
-            chartData.benzene = [];
-
-            Object.keys(historyData).forEach(key => {
+        } function
+            updateChartData(historyData) {
+                chartData.labels = []; chartData.aqi = []; chartData.co2 = []; chartData.nh3 = [];
+            chartData.alcohol = []; chartData.benzene = []; Object.keys(historyData).forEach(key => {
                 const data = historyData[key];
                 const time = new Date(data.timestamp);
-                
-                chartData.labels.push(time.toLocaleTimeString('id-ID', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+
+                chartData.labels.push(time.toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
                 }));
                 chartData.aqi.push(data.aqi || 0);
                 chartData.co2.push(data.co2_ppm || 0);
@@ -1076,7 +1367,7 @@
                 if (timeDiff > 60000) { // More than 1 minute
                     alerts.push({
                         type: 'alert-warning',
-                        message: `⏰ Data sensor tidak diperbarui selama ${Math.floor(timeDiff/60000)} menit`,
+                        message: `⏰ Data sensor tidak diperbarui selama ${Math.floor(timeDiff / 60000)} menit`,
                         time: new Date().toLocaleTimeString('id-ID')
                     });
                 }
@@ -1131,18 +1422,15 @@
             // Show good air quality message if no alerts
             if (alerts.length === 0 && aqi <= 100) {
                 alerts.push({
-                    type: 'alert-success',
-                    message: `✅ Kualitas udara dalam kondisi baik - AQI ${aqi}`,
-                    time: new Date().toLocaleTimeString('id-ID')
+                    type: 'alert-success', message: `✅ Kualitas udara dalam
+            kondisi baik - AQI ${aqi}`, time: new Date().toLocaleTimeString('id-ID')
                 });
-            }
-
-            // Update alerts display
+            } // Update alerts display
             alertsList.innerHTML = alerts.map(alert => `
-                <div class="${alert.type}">
-                    <strong>${alert.message}</strong><br>
-                    <small>Waktu: ${alert.time}</small>
-                </div>
+            <div class="${alert.type}">
+                <strong>${alert.message}</strong><br>
+                <small>Waktu: ${alert.time}</small>
+            </div>
             `).join('');
 
             // Update recommendations
@@ -1154,45 +1442,32 @@
             let recommendations = [];
 
             if (aqi <= 50) {
-                recommendations = [
-                    'Kualitas udara sangat baik untuk semua aktivitas',
-                    'Aman untuk olahraga dan aktivitas luar ruangan',
-                    'Jendela boleh dibuka untuk sirkulasi udara alami'
+                recommendations = ['Kualitas udara sangat baik untuk semua aktivitas'
+                    , 'Aman untuk olahraga dan aktivitas luar ruangan', 'Jendela boleh dibuka untuk sirkulasi udara alami'
                 ];
             } else if (aqi <= 100) {
-                recommendations = [
-                    'Kualitas udara dapat diterima untuk sebagian besar orang',
-                    'Kelompok sensitif sebaiknya membatasi aktivitas luar ruangan yang berat',
-                    'Aman untuk aktivitas normal'
-                ];
+                recommendations = ['Kualitas udara dapat diterima untuk sebagian besar orang'
+                    , 'Kelompok sensitif sebaiknya membatasi aktivitas luar ruangan yang berat'
+                    , 'Aman untuk aktivitas normal'];
             } else if (aqi <= 150) {
-                recommendations = [
-                    'Kelompok sensitif sebaiknya mengurangi aktivitas luar ruangan',
-                    'Gunakan masker jika harus beraktivitas di luar',
-                    'Batasi olahraga luar ruangan untuk kelompok sensitif'
-                ];
+                recommendations = ['Kelompok sensitif sebaiknya mengurangi aktivitas luar ruangan'
+                    , 'Gunakan masker jika harus beraktivitas di luar'
+                    , 'Batasi olahraga luar ruangan untuk kelompok sensitif'];
             } else if (aqi <= 200) {
-                recommendations = [
-                    'Semua orang sebaiknya membatasi aktivitas luar ruangan',
-                    'Gunakan masker N95 saat keluar rumah',
-                    'Tutup jendela dan gunakan pembersih udara jika ada'
-                ];
-            } else if (aqi <= 300) {
-                recommendations = [
-                    'Hindari semua aktivitas luar ruangan',
-                    'Gunakan masker berkualitas tinggi jika terpaksa keluar',
-                    'Kelompok rentan sebaiknya tetap di dalam ruangan',
-                    'Konsultasi dengan dokter jika mengalami gejala'
+                recommendations = ['Semua orang sebaiknya membatasi aktivitas luar ruangan'
+                    , 'Gunakan masker N95 saat keluar rumah', 'Tutup jendela dan gunakan pembersih udara jika ada'];
+            }
+            else if (aqi <= 300) {
+                recommendations = ['Hindari semua aktivitas luar ruangan'
+                    , 'Gunakan masker berkualitas tinggi jika terpaksa keluar'
+                    , 'Kelompok rentan sebaiknya tetap di dalam ruangan', 'Konsultasi dengan dokter jika mengalami gejala'
                 ];
             } else {
-                recommendations = [
-                    'BAHAYA! Jangan keluar rumah kecuali dalam keadaan darurat',
-                    'Semua orang berisiko mengalami efek kesehatan serius',
-                    'Gunakan pembersih udara dan tutup semua ventilasi',
-                    'Segera hubungi layanan kesehatan jika mengalami gejala'
-                ];
+                recommendations = ['BAHAYA! Jangan keluar rumah kecuali dalam keadaan darurat'
+                    , 'Semua orang berisiko mengalami efek kesehatan serius'
+                    , 'Gunakan pembersih udara dan tutup semua ventilasi'
+                    , 'Segera hubungi layanan kesehatan jika mengalami gejala'];
             }
-
             recommendationList.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
         }
 
@@ -1242,7 +1517,7 @@
                 googleLoading.style.display = 'none';
                 googleAirData.style.display = 'none';
                 googleError.style.display = 'block';
-                
+
                 // Show demo data if API fails
                 showGoogleDemoData();
             }
@@ -1252,44 +1527,44 @@
             const googleLoading = document.getElementById('googleLoading');
             const googleAirData = document.getElementById('googleAirData');
             const googleError = document.getElementById('googleError');
-            
+
             googleLoading.style.display = 'none';
             googleAirData.style.display = 'block';
             googleError.style.display = 'none';
-            
+
             // Update main AQI
             const universalAqi = data.indexes?.find(index => index.code === 'uaqi');
             if (universalAqi) {
                 document.getElementById('googleAQI').textContent = universalAqi.aqi;
                 document.getElementById('googleCategory').textContent = universalAqi.category;
-                
+
                 const aqi = universalAqi.aqi;
                 const color = getAQIColor(aqi);
                 document.getElementById('googleAQI').style.color = color;
             }
-            
+
             // Find dominant pollutant
             let dominantPollutant = 'N/A';
             if (data.indexes && data.indexes.length > 0) {
-                const dominantIndex = data.indexes.reduce((prev, current) => 
+                const dominantIndex = data.indexes.reduce((prev, current) =>
                     (prev.aqi > current.aqi) ? prev : current
                 );
                 dominantPollutant = dominantIndex.displayName || dominantIndex.code;
             }
             document.getElementById('dominantPollutant').textContent = dominantPollutant;
-            
+
             // Health recommendation
             const healthRec = data.healthRecommendations?.generalPopulation || 'Tidak ada rekomendasi';
-            document.getElementById('healthRecommendation').textContent = 
+            document.getElementById('healthRecommendation').textContent =
                 healthRec.length > 30 ? healthRec.substring(0, 30) + '...' : healthRec;
-            
+
             // Update pollutant data
             if (data.pollutants) {
                 // Reset all values first
                 ['pm25', 'pm10', 'o3', 'no2', 'so2', 'co'].forEach(id => {
                     document.getElementById(id).textContent = '--';
                 });
-                
+
                 data.pollutants.forEach(pollutant => {
                     const elementId = pollutant.code.toLowerCase().replace('.', '').replace('_', '');
                     const element = document.getElementById(elementId);
@@ -1299,11 +1574,11 @@
                     }
                 });
             }
-            
+
             // Update timestamps
             const now = new Date();
             document.getElementById('googleUpdateTime').textContent = now.toLocaleString('id-ID');
-            
+
             // Calculate next refresh time (10 minutes from now)
             const nextRefresh = new Date(now.getTime() + 10 * 60000);
             document.getElementById('googleNextRefresh').textContent = nextRefresh.toLocaleTimeString('id-ID');
@@ -1314,21 +1589,21 @@
             const googleLoading = document.getElementById('googleLoading');
             const googleAirData = document.getElementById('googleAirData');
             const googleError = document.getElementById('googleError');
-            
+
             googleLoading.style.display = 'none';
             googleError.style.display = 'none';
             googleAirData.style.display = 'block';
-            
+
             // Demo data
             const demoAQI = Math.floor(Math.random() * 150) + 50;
             const demoColor = getAQIColor(demoAQI);
-            
+
             document.getElementById('googleAQI').textContent = demoAQI;
             document.getElementById('googleAQI').style.color = demoColor;
             document.getElementById('googleCategory').textContent = getAQIStatus(demoAQI);
             document.getElementById('dominantPollutant').textContent = 'PM2.5';
             document.getElementById('healthRecommendation').textContent = 'Aman untuk aktivitas normal';
-            
+
             // Demo pollutant values
             document.getElementById('pm25').textContent = (Math.random() * 50 + 10).toFixed(1);
             document.getElementById('pm10').textContent = (Math.random() * 80 + 20).toFixed(1);
@@ -1336,7 +1611,7 @@
             document.getElementById('no2').textContent = (Math.random() * 40 + 10).toFixed(1);
             document.getElementById('so2').textContent = (Math.random() * 20 + 5).toFixed(1);
             document.getElementById('co').textContent = (Math.random() * 2000 + 500).toFixed(1);
-            
+
             const now = new Date();
             document.getElementById('googleUpdateTime').textContent = now.toLocaleString('id-ID');
             const nextRefresh = new Date(now.getTime() + 10 * 60000);
@@ -1344,121 +1619,75 @@
         }
 
         function getAQIColor(aqi) {
-            if (aqi <= 50) return '#27ae60';      // Green
-            else if (aqi <= 100) return '#f39c12';   // Yellow
-            else if (aqi <= 150) return '#e67e22';   // Orange
-            else if (aqi <= 200) return '#e74c3c';   // Red
-            else if (aqi <= 300) return '#8e44ad';   // Purple
-            else return '#7e0023';                   // Maroon
-        }
-
-        function getAQIStatus(aqi) {
-            if (aqi <= 50) return 'Baik';
-            else if (aqi <= 100) return 'Sedang';
-            else if (aqi <= 150) return 'Tidak Sehat untuk Kelompok Sensitif';
-            else if (aqi <= 200) return 'Tidak Sehat';
-            else if (aqi <= 300) return 'Sangat Tidak Sehat';
-            else return 'Berbahaya';
-        }
-
-        function refreshData() {
-            console.log('Refreshing data...');
-            
-            // Simulate data if Firebase is not connected or no real data
-            if (!firebaseConnected || !currentData) {
-                simulateLocalData();
-            }
-            
-            // Refresh Google data
-            fetchGoogleAirQuality();
-            
-            // Update refresh time
+            if (aqi <= 50) return '#27ae60'; // Green else if (aqi <=100) return '#f39c12' ; // Yellow else if (aqi
+                    <= 150) return '#e67e22'; // Orange else if (aqi <=200) return '#e74c3c' ; // Red else if (aqi
+                    <= 300) return '#8e44ad'; // Purple else return '#7e0023' ; // Maroon } function getAQIStatus(aqi) {
+            if (aqi <= 50) return 'Baik'; else if (aqi <= 100) return 'Sedang'; else if (aqi <= 150)
+                return 'Tidak Sehat untuk Kelompok Sensitif'; else if (aqi <= 200) return 'Tidak Sehat'; else if
+                    (aqi <= 300) return 'Sangat Tidak Sehat'; else return 'Berbahaya';
+        } function refreshData() {
+            console.log('Refreshing data...'); // Simulate data if Firebase is not connected or no real data if
+            (!firebaseConnected || !currentData) { simulateLocalData(); } // Refresh Google data
+            fetchGoogleAirQuality(); // Update refresh time
             document.getElementById('updateTime').textContent = new Date().toLocaleString('id-ID');
+        } // Simulate
+                    local sensor data for demo purposes function simulateLocalData() {
+            const demoData = {
+                device_id:
+                    RT_LOCATION.device_id, location_id: RT_LOCATION.device_id, location_name: RT_LOCATION.name,
+                latitude: RT_LOCATION.lat, longitude: RT_LOCATION.lng, timestamp: new Date().toISOString(),
+                raw_sensor_value: Math.floor(Math.random() * 4095), co2_ppm: Math.random() * 1000 + 400, nh3_ppm:
+                    Math.random() * 100, alcohol_ppm: Math.random() * 50, benzene_ppm: Math.random() * 10, aqi:
+                    Math.floor(Math.random() * 200) + 50, status: '', status_color: '', device_status: 'online'
+            };
+            demoData.aqi = calculateSimulatedAQI(demoData); demoData.status = getAQIStatus(demoData.aqi);
+            demoData.status_color = getAQIColor(demoData.aqi); currentData = demoData; lastDataReceived = Date.now();
+            updateCurrentDataDisplay(demoData); updateAlerts(demoData); // Add to chart data const time=new
+            Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            chartData.labels.push(time); chartData.aqi.push(demoData.aqi); chartData.co2.push(demoData.co2_ppm);
+            // Keep only last 24 data points if (chartData.labels.length> 24) {
+            chartData.labels.shift();
+            chartData.aqi.shift();
+            chartData.co2.shift();
         }
 
-        // Simulate local sensor data for demo purposes
-        function simulateLocalData() {
-            const demoData = {
-                device_id: RT_LOCATION.device_id,
-                location_id: RT_LOCATION.device_id,
-                location_name: RT_LOCATION.name,
-                latitude: RT_LOCATION.lat,
-                longitude: RT_LOCATION.lng,
-                timestamp: new Date().toISOString(),
-                raw_sensor_value: Math.floor(Math.random() * 4095),
-                co2_ppm: Math.random() * 1000 + 400,
-                nh3_ppm: Math.random() * 100,
-                alcohol_ppm: Math.random() * 50,
-                benzene_ppm: Math.random() * 10,
-                aqi: Math.floor(Math.random() * 200) + 50,
-                status: '',
-                status_color: '',
-                device_status: 'online'
-            };
-            
-            demoData.aqi = calculateSimulatedAQI(demoData);
-            demoData.status = getAQIStatus(demoData.aqi);
-            demoData.status_color = getAQIColor(demoData.aqi);
-            
-            currentData = demoData;
-            lastDataReceived = Date.now();
-            updateCurrentDataDisplay(demoData);
-            updateAlerts(demoData);
-            
-            // Add to chart data
-            const time = new Date().toLocaleTimeString('id-ID', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            
-            chartData.labels.push(time);
-            chartData.aqi.push(demoData.aqi);
-            chartData.co2.push(demoData.co2_ppm);
-            
-            // Keep only last 24 data points
-            if (chartData.labels.length > 24) {
-                chartData.labels.shift();
-                chartData.aqi.shift();
-                chartData.co2.shift();
-            }
-            
-            if (airQualityChart) {
+                    if (airQualityChart) {
                 airQualityChart.data.labels = chartData.labels;
                 airQualityChart.data.datasets[0].data = chartData.aqi;
                 airQualityChart.data.datasets[1].data = chartData.co2;
                 airQualityChart.update();
             }
-        }
+                    }
 
         function calculateSimulatedAQI(data) {
             let aqi = 50; // Base AQI
-            
+
             // CO2 contribution
             if (data.co2_ppm > 2000) aqi += 80;
             else if (data.co2_ppm > 1500) aqi += 60;
             else if (data.co2_ppm > 1000) aqi += 40;
             else if (data.co2_ppm > 800) aqi += 20;
-            
+
             // NH3 contribution
             if (data.nh3_ppm > 75) aqi += 100;
             else if (data.nh3_ppm > 50) aqi += 70;
             else if (data.nh3_ppm > 35) aqi += 50;
             else if (data.nh3_ppm > 25) aqi += 30;
             else if (data.nh3_ppm > 10) aqi += 15;
-            
+
             // Alcohol contribution
             if (data.alcohol_ppm > 20) aqi += 60;
             else if (data.alcohol_ppm > 15) aqi += 40;
             else if (data.alcohol_ppm > 10) aqi += 25;
             else if (data.alcohol_ppm > 5) aqi += 15;
-            
+
             // Benzene contribution
             if (data.benzene_ppm > 10) aqi += 150;
             else if (data.benzene_ppm > 5) aqi += 100;
             else if (data.benzene_ppm > 2) aqi += 60;
             else if (data.benzene_ppm > 1) aqi += 30;
             else if (data.benzene_ppm > 0.5) aqi += 15;
-            
+
             return Math.min(aqi, 500); // Max AQI 500
         }
 
@@ -1466,7 +1695,7 @@
         setInterval(() => {
             location.reload();
         }, 1800000);
-        
+
         // Initialize demo data on load
         setTimeout(() => {
             if (!currentData) {
@@ -1475,4 +1704,5 @@
         }, 2000);
     </script>
 </body>
+
 </html>
