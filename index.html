@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Air Quality Monitor - RT Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-check-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
@@ -948,10 +947,6 @@
     </div>
 
     <script>
-        // Aktifkan App Check dengan reCAPTCHA v3
-        const appCheck = firebase.appCheck();
-        appCheck.activate('6LdWX70rAAAAAMQXHl0CSQjGE8nIsEX0wxwolXdd', true);
-        // 'true' = auto refresh token secara berkala
 
         // ESP32-CAM Configuration
         let isConnected = false;
@@ -1302,29 +1297,41 @@
                 aqiElement.className = 'status-value status-good';
                 statusElement.className = 'status-value status-good';
             } else if (aqi <= 100) {
-                aqiElement.className = 'status-value status-moderate'; statusElement.className = 'status-value status-moderate';
-            }
-            else if (aqi <= 200) {
+                aqiElement.className = 'status-value status-moderate';
+                statusElement.className = 'status-value status-moderate';
+            } else if (aqi <= 200) {
                 aqiElement.className = 'status-value status-unhealthy';
                 statusElement.className = 'status-value status-unhealthy';
             } else if (aqi <= 300) {
-                aqiElement.className = 'status-value status-dangerous'; statusElement.className = 'status-value status-dangerous';
+                aqiElement.className = 'status-value status-dangerous';
+                statusElement.className = 'status-value status-dangerous';
             } else {
                 aqiElement.className = 'status-value status-hazardous';
                 statusElement.className = 'status-value status-hazardous';
-            } // Update gas readings
+            }
+
+            // Update gas readings
             document.getElementById('co2Value').textContent = parseFloat(data.co2_ppm || 0).toFixed(1);
             document.getElementById('nh3Value').textContent = parseFloat(data.nh3_ppm || 0).toFixed(1);
             document.getElementById('alcoholValue').textContent = parseFloat(data.alcohol_ppm || 0).toFixed(1);
             document.getElementById('benzeneValue').textContent = parseFloat(data.benzene_ppm || 0).toFixed(2);
-            document.getElementById('rawValue').textContent = data.raw_sensor_value || '-'; // Update timestamps const
-            timestamp = new Date(data.timestamp);
+            document.getElementById('rawValue').textContent = data.raw_sensor_value || '-';
+
+            // Update timestamps
+            const timestamp = new Date(data.timestamp);
             document.getElementById('lastUpdate').textContent = timestamp.toLocaleTimeString('id-ID');
             document.getElementById('updateTime').textContent = timestamp.toLocaleString('id-ID');
-        } function
-            updateChartData(historyData) {
-                chartData.labels = []; chartData.aqi = []; chartData.co2 = []; chartData.nh3 = [];
-            chartData.alcohol = []; chartData.benzene = []; Object.keys(historyData).forEach(key => {
+        }
+
+        function updateChartData(historyData) {
+            chartData.labels = [];
+            chartData.aqi = [];
+            chartData.co2 = [];
+            chartData.nh3 = [];
+            chartData.alcohol = [];
+            chartData.benzene = [];
+
+            Object.keys(historyData).forEach(key => {
                 const data = historyData[key];
                 const time = new Date(data.timestamp);
 
@@ -1422,15 +1429,18 @@
             // Show good air quality message if no alerts
             if (alerts.length === 0 && aqi <= 100) {
                 alerts.push({
-                    type: 'alert-success', message: `✅ Kualitas udara dalam
-            kondisi baik - AQI ${aqi}`, time: new Date().toLocaleTimeString('id-ID')
+                    type: 'alert-success',
+                    message: `✅ Kualitas udara dalam kondisi baik - AQI ${aqi}`,
+                    time: new Date().toLocaleTimeString('id-ID')
                 });
-            } // Update alerts display
+            }
+
+            // Update alerts display
             alertsList.innerHTML = alerts.map(alert => `
-            <div class="${alert.type}">
-                <strong>${alert.message}</strong><br>
-                <small>Waktu: ${alert.time}</small>
-            </div>
+                <div class="${alert.type}">
+                    <strong>${alert.message}</strong><br>
+                    <small>Waktu: ${alert.time}</small>
+                </div>
             `).join('');
 
             // Update recommendations
@@ -1442,32 +1452,45 @@
             let recommendations = [];
 
             if (aqi <= 50) {
-                recommendations = ['Kualitas udara sangat baik untuk semua aktivitas'
-                    , 'Aman untuk olahraga dan aktivitas luar ruangan', 'Jendela boleh dibuka untuk sirkulasi udara alami'
+                recommendations = [
+                    'Kualitas udara sangat baik untuk semua aktivitas',
+                    'Aman untuk olahraga dan aktivitas luar ruangan',
+                    'Jendela boleh dibuka untuk sirkulasi udara alami'
                 ];
             } else if (aqi <= 100) {
-                recommendations = ['Kualitas udara dapat diterima untuk sebagian besar orang'
-                    , 'Kelompok sensitif sebaiknya membatasi aktivitas luar ruangan yang berat'
-                    , 'Aman untuk aktivitas normal'];
+                recommendations = [
+                    'Kualitas udara dapat diterima untuk sebagian besar orang',
+                    'Kelompok sensitif sebaiknya membatasi aktivitas luar ruangan yang berat',
+                    'Aman untuk aktivitas normal'
+                ];
             } else if (aqi <= 150) {
-                recommendations = ['Kelompok sensitif sebaiknya mengurangi aktivitas luar ruangan'
-                    , 'Gunakan masker jika harus beraktivitas di luar'
-                    , 'Batasi olahraga luar ruangan untuk kelompok sensitif'];
+                recommendations = [
+                    'Kelompok sensitif sebaiknya mengurangi aktivitas luar ruangan',
+                    'Gunakan masker jika harus beraktivitas di luar',
+                    'Batasi olahraga luar ruangan untuk kelompok sensitif'
+                ];
             } else if (aqi <= 200) {
-                recommendations = ['Semua orang sebaiknya membatasi aktivitas luar ruangan'
-                    , 'Gunakan masker N95 saat keluar rumah', 'Tutup jendela dan gunakan pembersih udara jika ada'];
-            }
-            else if (aqi <= 300) {
-                recommendations = ['Hindari semua aktivitas luar ruangan'
-                    , 'Gunakan masker berkualitas tinggi jika terpaksa keluar'
-                    , 'Kelompok rentan sebaiknya tetap di dalam ruangan', 'Konsultasi dengan dokter jika mengalami gejala'
+                recommendations = [
+                    'Semua orang sebaiknya membatasi aktivitas luar ruangan',
+                    'Gunakan masker N95 saat keluar rumah',
+                    'Tutup jendela dan gunakan pembersih udara jika ada'
+                ];
+            } else if (aqi <= 300) {
+                recommendations = [
+                    'Hindari semua aktivitas luar ruangan',
+                    'Gunakan masker berkualitas tinggi jika terpaksa keluar',
+                    'Kelompok rentan sebaiknya tetap di dalam ruangan',
+                    'Konsultasi dengan dokter jika mengalami gejala'
                 ];
             } else {
-                recommendations = ['BAHAYA! Jangan keluar rumah kecuali dalam keadaan darurat'
-                    , 'Semua orang berisiko mengalami efek kesehatan serius'
-                    , 'Gunakan pembersih udara dan tutup semua ventilasi'
-                    , 'Segera hubungi layanan kesehatan jika mengalami gejala'];
+                recommendations = [
+                    'BAHAYA! Jangan keluar rumah kecuali dalam keadaan darurat',
+                    'Semua orang berisiko mengalami efek kesehatan serius',
+                    'Gunakan pembersih udara dan tutup semua ventilasi',
+                    'Segera hubungi layanan kesehatan jika mengalami gejala'
+                ];
             }
+
             recommendationList.innerHTML = recommendations.map(rec => `<li>${rec}</li>`).join('');
         }
 
@@ -1619,45 +1642,91 @@
         }
 
         function getAQIColor(aqi) {
-            if (aqi <= 50) return '#27ae60'; // Green else if (aqi <=100) return '#f39c12' ; // Yellow else if (aqi
-                    <= 150) return '#e67e22'; // Orange else if (aqi <=200) return '#e74c3c' ; // Red else if (aqi
-                    <= 300) return '#8e44ad'; // Purple else return '#7e0023' ; // Maroon } function getAQIStatus(aqi) {
-            if (aqi <= 50) return 'Baik'; else if (aqi <= 100) return 'Sedang'; else if (aqi <= 150)
-                return 'Tidak Sehat untuk Kelompok Sensitif'; else if (aqi <= 200) return 'Tidak Sehat'; else if
-                    (aqi <= 300) return 'Sangat Tidak Sehat'; else return 'Berbahaya';
-        } function refreshData() {
-            console.log('Refreshing data...'); // Simulate data if Firebase is not connected or no real data if
-            (!firebaseConnected || !currentData) { simulateLocalData(); } // Refresh Google data
-            fetchGoogleAirQuality(); // Update refresh time
-            document.getElementById('updateTime').textContent = new Date().toLocaleString('id-ID');
-        } // Simulate
-                    local sensor data for demo purposes function simulateLocalData() {
-            const demoData = {
-                device_id:
-                    RT_LOCATION.device_id, location_id: RT_LOCATION.device_id, location_name: RT_LOCATION.name,
-                latitude: RT_LOCATION.lat, longitude: RT_LOCATION.lng, timestamp: new Date().toISOString(),
-                raw_sensor_value: Math.floor(Math.random() * 4095), co2_ppm: Math.random() * 1000 + 400, nh3_ppm:
-                    Math.random() * 100, alcohol_ppm: Math.random() * 50, benzene_ppm: Math.random() * 10, aqi:
-                    Math.floor(Math.random() * 200) + 50, status: '', status_color: '', device_status: 'online'
-            };
-            demoData.aqi = calculateSimulatedAQI(demoData); demoData.status = getAQIStatus(demoData.aqi);
-            demoData.status_color = getAQIColor(demoData.aqi); currentData = demoData; lastDataReceived = Date.now();
-            updateCurrentDataDisplay(demoData); updateAlerts(demoData); // Add to chart data const time=new
-            Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            chartData.labels.push(time); chartData.aqi.push(demoData.aqi); chartData.co2.push(demoData.co2_ppm);
-            // Keep only last 24 data points if (chartData.labels.length> 24) {
-            chartData.labels.shift();
-            chartData.aqi.shift();
-            chartData.co2.shift();
+            if (aqi <= 50) return '#27ae60';      // Green
+            else if (aqi <= 100) return '#f39c12';   // Yellow
+            else if (aqi <= 150) return '#e67e22';   // Orange
+            else if (aqi <= 200) return '#e74c3c';   // Red
+            else if (aqi <= 300) return '#8e44ad';   // Purple
+            else return '#7e0023';                   // Maroon
         }
 
-                    if (airQualityChart) {
+        function getAQIStatus(aqi) {
+            if (aqi <= 50) return 'Baik';
+            else if (aqi <= 100) return 'Sedang';
+            else if (aqi <= 150) return 'Tidak Sehat untuk Kelompok Sensitif';
+            else if (aqi <= 200) return 'Tidak Sehat';
+            else if (aqi <= 300) return 'Sangat Tidak Sehat';
+            else return 'Berbahaya';
+        }
+
+        function refreshData() {
+            console.log('Refreshing data...');
+
+            // Simulate data if Firebase is not connected or no real data
+            if (!firebaseConnected || !currentData) {
+                simulateLocalData();
+            }
+
+            // Refresh Google data
+            fetchGoogleAirQuality();
+
+            // Update refresh time
+            document.getElementById('updateTime').textContent = new Date().toLocaleString('id-ID');
+        }
+
+        // Simulate local sensor data for demo purposes
+        function simulateLocalData() {
+            const demoData = {
+                device_id: RT_LOCATION.device_id,
+                location_id: RT_LOCATION.device_id,
+                location_name: RT_LOCATION.name,
+                latitude: RT_LOCATION.lat,
+                longitude: RT_LOCATION.lng,
+                timestamp: new Date().toISOString(),
+                raw_sensor_value: Math.floor(Math.random() * 4095),
+                co2_ppm: Math.random() * 1000 + 400,
+                nh3_ppm: Math.random() * 100,
+                alcohol_ppm: Math.random() * 50,
+                benzene_ppm: Math.random() * 10,
+                aqi: Math.floor(Math.random() * 200) + 50,
+                status: '',
+                status_color: '',
+                device_status: 'online'
+            };
+
+            demoData.aqi = calculateSimulatedAQI(demoData);
+            demoData.status = getAQIStatus(demoData.aqi);
+            demoData.status_color = getAQIColor(demoData.aqi);
+
+            currentData = demoData;
+            lastDataReceived = Date.now();
+            updateCurrentDataDisplay(demoData);
+            updateAlerts(demoData);
+
+            // Add to chart data
+            const time = new Date().toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            chartData.labels.push(time);
+            chartData.aqi.push(demoData.aqi);
+            chartData.co2.push(demoData.co2_ppm);
+
+            // Keep only last 24 data points
+            if (chartData.labels.length > 24) {
+                chartData.labels.shift();
+                chartData.aqi.shift();
+                chartData.co2.shift();
+            }
+
+            if (airQualityChart) {
                 airQualityChart.data.labels = chartData.labels;
                 airQualityChart.data.datasets[0].data = chartData.aqi;
                 airQualityChart.data.datasets[1].data = chartData.co2;
                 airQualityChart.update();
             }
-                    }
+        }
 
         function calculateSimulatedAQI(data) {
             let aqi = 50; // Base AQI
