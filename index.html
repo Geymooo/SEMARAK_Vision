@@ -757,32 +757,6 @@
             </div>
         </div>
 
-        <!-- ESP32-CAM Control Section -->
-        <div class="camera-section">
-            <h3>📱 Vision</h3>
-
-            <div class="camera-control-card">
-                <div class="camera-icon">📷</div>
-
-                <div id="cameraStatus" class="camera-status error">
-                    <div class="status-dot"></div>
-                    <span>🔄 Connecting to Firebase...</span>
-                </div>
-
-                <button id="captureButton" class="camera-btn" disabled>
-                    Capture Photo
-                </button>
-
-                <div id="cooldownTimer" class="cooldown-timer" style="display: none;"></div>
-
-                <div class="camera-info">
-                    <strong>ℹ️ Rate Limit:</strong> 1x/menit<br>
-                    Foto akan dikirimkan ke channel Telegram<br>
-                    <strong>📍 Lokasi:</strong> RT 013 RW 015 Kelurahan Cipinang Muara
-                </div>
-            </div>
-        </div>
-
         <div class="status-overview">
             <div class="status-card">
                 <h3>🌬️ Status Udara</h3>
@@ -834,6 +808,32 @@
                 <h4>🔧 Raw Sensor</h4>
                 <div class="data-value" id="rawValue">-</div>
                 <div class="data-unit">ADC</div>
+            </div>
+        </div>
+
+        <!-- ESP32-CAM Control Section -->
+        <div class="camera-section">
+            <h3>📱 Vision</h3>
+
+            <div class="camera-control-card">
+                <div class="camera-icon">📷</div>
+
+                <div id="cameraStatus" class="camera-status error">
+                    <div class="status-dot"></div>
+                    <span>🔄 Connecting to Firebase...</span>
+                </div>
+
+                <button id="captureButton" class="camera-btn" disabled>
+                    Capture Photo
+                </button>
+
+                <div id="cooldownTimer" class="cooldown-timer" style="display: none;"></div>
+
+                <div class="camera-info">
+                    <strong>ℹ️ Rate Limit:</strong> 1x/menit<br>
+                    Foto akan dikirimkan ke channel Telegram<br>
+                    <strong>📍 Lokasi:</strong> RT 013 RW 015 Kelurahan Cipinang Muara
+                </div>
             </div>
         </div>
 
