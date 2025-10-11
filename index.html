@@ -749,10 +749,36 @@
             <h1>SEMARAK-Vision</h1>
             <p>Monitoring Kualitas Udara RT Berbasis IoT dengan Sensor MQ135</p>
             <div class="header-controls">
-                <button class="refresh-btn" onclick="refreshData()">🔄 Refresh Data</button>
+                <button class="refresh-btn" style="display: none;" onclick="refreshData()">🔄 Refresh Data</button>
                 <div class="firebase-status firebase-connecting" id="firebaseStatus">
                     <div class="status-dot" id="firebaseDot"></div>
                     <span id="firebaseStatusText">Menghubungkan...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ESP32-CAM Control Section -->
+        <div class="camera-section" style="display: none;">
+            <h3>📱 ESP32-CAM Remote Control</h3>
+            
+            <div class="camera-control-card">
+                <div class="camera-icon">📷</div>
+                
+                <div id="cameraStatus" class="camera-status error">
+                    <div class="status-dot"></div>
+                    <span>🔄 Connecting to Firebase...</span>
+                </div>
+                
+                <button id="captureButton" class="camera-btn" disabled>
+                    Capture Photo
+                </button>
+                
+                <div id="cooldownTimer" class="cooldown-timer" style="display: none;"></div>
+                
+                <div class="camera-info">
+                    <strong>ℹ️ Rate Limit:</strong> 1 capture per minute<br>
+                    Photos will be sent to your Telegram chat<br>
+                    <strong>📍 Location:</strong> RT 013 RW 015 Kelurahan Cipinang Muara
                 </div>
             </div>
         </div>
@@ -761,7 +787,7 @@
             <div class="status-card">
                 <h3>🌬️ Status Udara</h3>
                 <div class="status-value" id="airStatus">Loading...</div>
-                <div class="device-status-indicator" style="display: none;">
+                <div class="device-status-indicator">
                     <div class="status-dot" id="deviceDot"></div>
                     <small id="deviceStatusText">Checking...</small>
                 </div>
@@ -772,12 +798,12 @@
                 <small>Air Quality Index</small>
             </div>
             <div class="status-card">
-                <h3>📡 Status Perangkat</h3>
+                <h3>📡 Device Status</h3>
                 <div class="status-value status-good" id="sensorStatus">Online</div>
                 <small>ESP32 + MQ135</small>
             </div>
             <div class="status-card">
-                <h3>⏰ Terakhir Update</h3>
+                <h3>⏰ Last Update</h3>
                 <div class="status-value" id="lastUpdate" style="font-size: 1em;">-</div>
                 <small>Pembaruan Terakhir</small>
             </div>
@@ -808,31 +834,6 @@
                 <h4>🔧 Raw Sensor</h4>
                 <div class="data-value" id="rawValue">-</div>
                 <div class="data-unit">ADC</div>
-            </div>
-        </div>
-
-        <div class="camera-section">
-            <h3>📱 Vision</h3>
-
-            <div class="camera-control-card">
-                <div class="camera-icon">📷</div>
-
-                <div id="cameraStatus" class="camera-status error">
-                    <div class="status-dot"></div>
-                    <span>🔄 Connecting to Firebase...</span>
-                </div>
-
-                <button id="captureButton" class="camera-btn" disabled>
-                    Capture Photo
-                </button>
-
-                <div id="cooldownTimer" class="cooldown-timer" style="display: none;"></div>
-
-                <div class="camera-info">
-                    <strong>ℹ️ Rate Limit:</strong> 1x/menit<br>
-                    Foto akan dikirimkan ke channel Telegram<br>
-                    <strong>📍 Lokasi:</strong> RT 013 RW 015 Kelurahan Cipinang Muara
-                </div>
             </div>
         </div>
 
@@ -987,8 +988,8 @@
         const RT_LOCATION = {
             lat: -6.222870475586725,
             lng: 106.8926745769288,
-            name: "RT 013 RW 015 Kelurahan Cipinang Muara",
-            device_id: "ex1EfTNvAvNypShcbV77purH5Wn1"
+            name: "Kantin Spirit - Politeknik Negeri Jakarta",
+            device_id: "PNJ"
         };
 
         // Current data store
@@ -1036,7 +1037,7 @@
                 firebaseConnected = snapshot.val() === true;
 
                 if (firebaseConnected) {
-                    updateFirebaseStatus('connected', 'Terhubung');
+                    updateFirebaseStatus('connected', 'Firebase Terhubung');
                     startRealtimeUpdates();
                     updateCameraConnectionStatus();
                 } else {
@@ -1132,24 +1133,24 @@
                 const captureButton = document.getElementById('captureButton');
                 captureButton.disabled = true;
                 captureButton.textContent = 'Sending request...';
-
+                
                 // Set capture request
                 await database.ref('camera_control/capture_request').set(true);
-
+                
                 updateCameraStatus('waiting processing', '📸 Capturing photo...');
-
+                
                 // Set timestamp and start cooldown
                 const now = Date.now();
                 await database.ref('camera_control/last_capture_time').set(now);
                 lastCaptureTime = now;
                 isFirstTime = false;
-
+                
                 startCooldown();
 
             } catch (error) {
                 console.error('Capture error:', error);
                 updateCameraStatus('error', '❌ Failed to send capture request');
-
+                
                 const captureButton = document.getElementById('captureButton');
                 captureButton.disabled = false;
                 captureButton.textContent = 'Capture Photo';
@@ -1159,7 +1160,7 @@
         function checkCooldown() {
             const now = Date.now();
             const timeElapsed = now - lastCaptureTime;
-
+            
             if (timeElapsed < COOLDOWN_PERIOD) {
                 startCooldown();
             } else {
@@ -1170,18 +1171,18 @@
         function startCooldown() {
             const captureButton = document.getElementById('captureButton');
             const cooldownTimer = document.getElementById('cooldownTimer');
-
+            
             captureButton.disabled = true;
             cooldownTimer.style.display = 'block';
-
+            
             if (cooldownInterval) {
                 clearInterval(cooldownInterval);
             }
-
+            
             cooldownInterval = setInterval(() => {
                 const now = Date.now();
                 const remaining = Math.max(0, COOLDOWN_PERIOD - (now - lastCaptureTime));
-
+                
                 if (remaining > 0) {
                     const seconds = Math.ceil(remaining / 1000);
                     cooldownTimer.textContent = `⏱️ Next capture available in ${seconds} seconds`;
@@ -1195,16 +1196,16 @@
         function enableCaptureButton() {
             const captureButton = document.getElementById('captureButton');
             const cooldownTimer = document.getElementById('cooldownTimer');
-
+            
             if (cooldownInterval) {
                 clearInterval(cooldownInterval);
                 cooldownInterval = null;
             }
-
+            
             cooldownTimer.style.display = 'none';
             captureButton.disabled = false;
             captureButton.textContent = 'Capture Photo';
-
+            
             if (firebaseConnected) {
                 updateCameraStatus('connected', '✅ Ready to capture');
             }
@@ -1388,18 +1389,8 @@
 
             // Update timestamps
             const timestamp = new Date(data.timestamp);
-
-            const formattedDateTime = timestamp.toLocaleString('id-ID', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-
-            document.getElementById('lastUpdate').textContent = formattedDateTime;
-            document.getElementById('updateTime').textContent = formattedDateTime;
+            document.getElementById('lastUpdate').textContent = timestamp.toLocaleTimeString('id-ID');
+            document.getElementById('updateTime').textContent = timestamp.toLocaleString('id-ID');
         }
 
         function updateChartData(historyData) {
