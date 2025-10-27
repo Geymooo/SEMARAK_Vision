@@ -759,7 +759,7 @@
 
         <div class="status-overview">
             <div class="status-card">
-                <h3>🌬️ Status Udara</h3>
+                <h3>🚬 Status Asap</h3>
                 <div class="status-value" id="airStatus">Loading...</div>
                 <div class="device-status-indicator" style="display: none;">
                     <div class="status-dot" id="deviceDot"></div>
@@ -767,9 +767,9 @@
                 </div>
             </div>
             <div class="status-card">
-                <h3>📊 AQI</h3>
+                <h3>📊 CSI</h3>
                 <div class="status-value" id="aqiValue">-</div>
-                <small>Air Quality Index</small>
+                <small>Asap Rokok</small>
             </div>
             <div class="status-card">
                 <h3>📡 Status Perangkat</h3>
@@ -788,11 +788,13 @@
                 <h4>🔥 CO₂</h4>
                 <div class="data-value" id="co2Value">-</div>
                 <div class="data-unit">ppm</div>
+                <small id="co2Status" style="color: #7f8c8d; font-size: 0.85em;">-</small>
             </div>
             <div class="data-card">
                 <h4>💨 NH₃</h4>
                 <div class="data-value" id="nh3Value">-</div>
                 <div class="data-unit">ppm</div>
+                <small id="nh3Status" style="color: #7f8c8d; font-size: 0.85em;">-</small>
             </div>
             <div class="data-card">
                 <h4>🍷 Alkohol</h4>
@@ -987,7 +989,7 @@
         const RT_LOCATION = {
             lat: -6.370690886532894,
             lng: 106.82364914153919,
-            name: "KPoliteknik Negeri Jakarta",
+            name: "Politeknik Negeri Jakarta",
             device_id: "ex1EfTNvAvNypShcbV77purH5Wn1"
         };
 
@@ -1353,42 +1355,77 @@
         }
 
         function updateCurrentDataDisplay(data) {
-            // Update status cards
-            document.getElementById('airStatus').textContent = data.status || 'Unknown';
-            document.getElementById('aqiValue').textContent = data.aqi || '-';
+            // Ambil data smoke dari Firebase
+            const isSmoke = data.smoke?.is_smoke || false;
+            const csi = data.smoke?.csi || 0;
 
-            // Color code AQI
+            // Update Status Udara berdasarkan is_smoke
+            const airStatusText = isSmoke ? 'Terdeteksi Asap' : 'Udara Bersih';
+            document.getElementById('airStatus').textContent = airStatusText;
+
+            // Update CSI
+            document.getElementById('aqiValue').textContent = csi.toFixed(2);
+
+            // Color code berdasarkan is_smoke dan CSI
             const aqiElement = document.getElementById('aqiValue');
             const statusElement = document.getElementById('airStatus');
-            const aqi = data.aqi || 0;
 
-            if (aqi <= 50) {
-                aqiElement.className = 'status-value status-good';
-                statusElement.className = 'status-value status-good';
-            } else if (aqi <= 100) {
-                aqiElement.className = 'status-value status-moderate';
-                statusElement.className = 'status-value status-moderate';
-            } else if (aqi <= 200) {
+            if (isSmoke) {
                 aqiElement.className = 'status-value status-unhealthy';
                 statusElement.className = 'status-value status-unhealthy';
-            } else if (aqi <= 300) {
-                aqiElement.className = 'status-value status-dangerous';
-                statusElement.className = 'status-value status-dangerous';
+            } else if (csi > 0.3) {
+                aqiElement.className = 'status-value status-moderate';
+                statusElement.className = 'status-value status-moderate';
             } else {
-                aqiElement.className = 'status-value status-hazardous';
-                statusElement.className = 'status-value status-hazardous';
+                aqiElement.className = 'status-value status-good';
+                statusElement.className = 'status-value status-good';
             }
 
-            // Update gas readings
-            document.getElementById('co2Value').textContent = parseFloat(data.co2_ppm || 0).toFixed(1);
-            document.getElementById('nh3Value').textContent = parseFloat(data.nh3_ppm || 0).toFixed(1);
-            document.getElementById('alcoholValue').textContent = parseFloat(data.alcohol_ppm || 0).toFixed(1);
-            document.getElementById('benzeneValue').textContent = parseFloat(data.benzene_ppm || 0).toFixed(2);
-            document.getElementById('rawValue').textContent = data.raw_sensor_value || '-';
+            // ========================================
+            // ✅ DEKLARASI VARIABEL DULU!
+            // ========================================
+            const co2 = parseFloat(data.co2_ppm);
+            const nh3 = parseFloat(data.nh3_ppm);
+            const alcohol = parseFloat(data.alcohol_ppm);
+            const benzene = parseFloat(data.benzene_ppm);
+            const rawValue = parseInt(data.raw_sensor_value);
 
+            // Update gas readings display
+            document.getElementById('co2Value').textContent = isNaN(co2) ? '-' : co2.toFixed(1);
+            document.getElementById('nh3Value').textContent = isNaN(nh3) ? '-' : nh3.toFixed(2);
+            document.getElementById('alcoholValue').textContent = isNaN(alcohol) ? '-' : alcohol.toFixed(2);
+            document.getElementById('benzeneValue').textContent = isNaN(benzene) ? '-' : benzene.toFixed(2);
+            document.getElementById('rawValue').textContent = isNaN(rawValue) ? '-' : rawValue;
+
+            // ========================================
+            // Ventilation & Irritation Status
+            // ========================================
+            const ventStatus = data.ventilation?.status || 
+                            data.vent_status || 
+                            classifyVentilationCO2(co2);
+            
+            const irrStatus = data.irritation?.status || 
+                            data.irr_status || 
+                            classifyIrritationNH3(nh3);
+
+            // ========================================
+            // DEBUGGING INFO (Console)
+            // ========================================
+            console.log('📊 Data dari Firebase:', {
+                co2: co2,
+                nh3: nh3,
+                alcohol: alcohol,
+                benzene: benzene,
+                ventStatus: ventStatus,
+                irrStatus: irrStatus,
+                isSmoke: isSmoke,
+                csi: csi
+            });
+
+            // ========================================
             // Update timestamps
+            // ========================================
             const timestamp = new Date(data.timestamp);
-
             const formattedDateTime = timestamp.toLocaleString('id-ID', {
                 year: 'numeric',
                 month: '2-digit',
@@ -1400,6 +1437,46 @@
 
             document.getElementById('lastUpdate').textContent = formattedDateTime;
             document.getElementById('updateTime').textContent = formattedDateTime;
+
+            // ========================================
+            // Update status display dengan warna
+            // ========================================
+            const co2StatusEl = document.getElementById('co2Status');
+            const nh3StatusEl = document.getElementById('nh3Status');
+
+            if (co2StatusEl) {
+                co2StatusEl.textContent = ventStatus;
+                co2StatusEl.style.color = getStatusColor(ventStatus);
+            }
+
+            if (nh3StatusEl) {
+                nh3StatusEl.textContent = irrStatus;
+                nh3StatusEl.style.color = getStatusColor(irrStatus);
+            }
+        }
+
+        function getStatusColor(status) {
+            if (status.includes('Baik')) return '#27ae60';
+            if (status.includes('Waspada')) return '#f39c12';
+            if (status.includes('Buruk') || status.includes('Tidak Nyaman')) return '#e67e22';
+            if (status.includes('Bahaya')) return '#e74c3c';
+            return '#7f8c8d';
+        }
+
+        function classifyVentilationCO2(ppm) {
+            if (isNaN(ppm)) return 'Unknown';
+            if (ppm <= 800) return 'Baik';
+            if (ppm <= 1000) return 'Waspada';
+            if (ppm <= 1500) return 'Buruk';
+            return 'Buruk Sekali';
+        }
+
+        function classifyIrritationNH3(ppm) {
+            if (isNaN(ppm)) return 'Unknown';
+            if (ppm <= 0.10) return 'Baik';
+            if (ppm <= 0.29) return 'Waspada';
+            if (ppm <= 1.00) return 'Tidak Nyaman';
+            return 'Bahaya';
         }
 
         function updateChartData(historyData) {
@@ -1435,7 +1512,8 @@
 
         function updateAlerts(data) {
             const alertsList = document.getElementById('alertsList');
-            const aqi = data.aqi || 0;
+            const isSmoke = data.smoke?.is_smoke || false;
+            const csi = data.smoke?.csi || 0;
             let alerts = [];
 
             // Firebase connection alert
@@ -1459,29 +1537,22 @@
                 }
             }
 
-            // Generate alerts based on AQI and gas levels
-            if (aqi > 300) {
+            if (isSmoke) {
                 alerts.push({
                     type: 'alert-item',
-                    message: `🚨 BAHAYA TINGGI! AQI ${aqi} - Kualitas udara berbahaya untuk semua kelompok`,
+                    message: `🚬 ASAP ROKOK TERDETEKSI! CSI: ${csi.toFixed(2)} - Segera periksa area sekitar`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
-            } else if (aqi > 200) {
-                alerts.push({
-                    type: 'alert-item',
-                    message: `⚠️ PERINGATAN! AQI ${aqi} - Kualitas udara sangat tidak sehat`,
-                    time: new Date().toLocaleTimeString('id-ID')
-                });
-            } else if (aqi > 150) {
+            } else if (csi > 0.5) {
                 alerts.push({
                     type: 'alert-warning',
-                    message: `⚠️ Perhatian! AQI ${aqi} - Tidak sehat untuk kelompok sensitif`,
+                    message: `⚠️ Potensi Asap - CSI: ${csi.toFixed(2)} - Perlu perhatian`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             }
 
             // Check specific gas levels
-            if (data.co2_ppm > 2000) {
+            if (data.co2_ppm > 1000) {
                 alerts.push({
                     type: 'alert-warning',
                     message: `💨 Kadar CO₂ tinggi: ${parseFloat(data.co2_ppm).toFixed(1)} ppm`,
@@ -1489,7 +1560,7 @@
                 });
             }
 
-            if (data.nh3_ppm > 50) {
+            if (data.nh3_ppm > 0.30) {
                 alerts.push({
                     type: 'alert-item',
                     message: `⚠️ Kadar NH₃ berbahaya: ${parseFloat(data.nh3_ppm).toFixed(1)} ppm`,
@@ -1497,19 +1568,10 @@
                 });
             }
 
-            if (data.benzene_ppm > 5) {
-                alerts.push({
-                    type: 'alert-item',
-                    message: `☠️ Kadar Benzena tinggi: ${parseFloat(data.benzene_ppm).toFixed(2)} ppm`,
-                    time: new Date().toLocaleTimeString('id-ID')
-                });
-            }
-
-            // Show good air quality message if no alerts
-            if (alerts.length === 0 && aqi <= 100) {
+            if (alerts.length === 0) {
                 alerts.push({
                     type: 'alert-success',
-                    message: `✅ Kualitas udara dalam kondisi baik - AQI ${aqi}`,
+                    message: `✅ Udara bersih - Tidak ada asap terdeteksi (CSI: ${csi.toFixed(2)})`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             }
@@ -1523,50 +1585,31 @@
             `).join('');
 
             // Update recommendations
-            updateRecommendations(aqi);
+            updateRecommendations(isSmoke, csi);
         }
 
-        function updateRecommendations(aqi) {
-            const recommendationList = document.getElementById('recommendationList');
+        function updateRecommendations(isSmoke, csi) {
+        const recommendationList = document.getElementById('recommendationList');
             let recommendations = [];
 
-            if (aqi <= 50) {
+            if (isSmoke) {
                 recommendations = [
-                    'Kualitas udara sangat baik untuk semua aktivitas',
-                    'Aman untuk olahraga dan aktivitas luar ruangan',
-                    'Jendela boleh dibuka untuk sirkulasi udara alami'
+                    'Asap rokok terdeteksi - segera cek area kantin',
+                    'Pastikan tidak ada yang merokok di area terlarang',
+                    'Tingkatkan ventilasi dan sirkulasi udara',
+                    'Laporkan kepada petugas keamanan jika perlu'
                 ];
-            } else if (aqi <= 100) {
+            } else if (csi > 0.5) {
                 recommendations = [
-                    'Kualitas udara dapat diterima untuk sebagian besar orang',
-                    'Kelompok sensitif sebaiknya membatasi aktivitas luar ruangan yang berat',
-                    'Aman untuk aktivitas normal'
-                ];
-            } else if (aqi <= 150) {
-                recommendations = [
-                    'Kelompok sensitif sebaiknya mengurangi aktivitas luar ruangan',
-                    'Gunakan masker jika harus beraktivitas di luar',
-                    'Batasi olahraga luar ruangan untuk kelompok sensitif'
-                ];
-            } else if (aqi <= 200) {
-                recommendations = [
-                    'Semua orang sebaiknya membatasi aktivitas luar ruangan',
-                    'Gunakan masker N95 saat keluar rumah',
-                    'Tutup jendela dan gunakan pembersih udara jika ada'
-                ];
-            } else if (aqi <= 300) {
-                recommendations = [
-                    'Hindari semua aktivitas luar ruangan',
-                    'Gunakan masker berkualitas tinggi jika terpaksa keluar',
-                    'Kelompok rentan sebaiknya tetap di dalam ruangan',
-                    'Konsultasi dengan dokter jika mengalami gejala'
+                    'CSI sedikit meningkat - tetap waspada',
+                    'Pastikan ventilasi berjalan baik',
+                    'Monitor terus kondisi udara'
                 ];
             } else {
                 recommendations = [
-                    'BAHAYA! Jangan keluar rumah kecuali dalam keadaan darurat',
-                    'Semua orang berisiko mengalami efek kesehatan serius',
-                    'Gunakan pembersih udara dan tutup semua ventilasi',
-                    'Segera hubungi layanan kesehatan jika mengalami gejala'
+                    'Kualitas udara baik - tidak ada asap terdeteksi',
+                    'Kondisi aman untuk beraktivitas normal',
+                    'Pertahankan ventilasi yang baik'
                 ];
             }
 
@@ -1760,10 +1803,18 @@
                 nh3_ppm: Math.random() * 100,
                 alcohol_ppm: Math.random() * 50,
                 benzene_ppm: Math.random() * 10,
-                aqi: Math.floor(Math.random() * 200) + 50,
-                status: '',
-                status_color: '',
-                device_status: 'online'
+                device_status: 'online',
+                // ✅ TAMBAHKAN struktur smoke:
+                smoke: {
+                    is_smoke: Math.random() > 0.8,  // 20% chance ada asap
+                    csi: Math.random() * 2,         // Random CSI 0-2
+                    ema: {
+                        alc_short: Math.random() * 30,
+                        alc_long: Math.random() * 20,
+                        bzn_short: Math.random() * 5,
+                        bzn_long: Math.random() * 3
+                    }
+                }
             };
 
             demoData.aqi = calculateSimulatedAQI(demoData);
