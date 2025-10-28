@@ -767,17 +767,17 @@
                 </div>
             </div>
             <div class="status-card">
-                <h3>📊 VOC Index</h3>
+                <h3>VOC Index</h3>
                 <div class="status-value" id="aqiValue">-</div>
                 <small>Asap Rokok</small>
             </div>
             <div class="status-card">
-                <h3>📡 Status Perangkat</h3>
+                <h3>Status Perangkat</h3>
                 <div class="status-value status-good" id="sensorStatus">Online</div>
                 <small>ESP32 + MQ135</small>
             </div>
             <div class="status-card">
-                <h3>⏰ Terakhir Update</h3>
+                <h3>Terakhir Update</h3>
                 <div class="status-value" id="lastUpdate" style="font-size: 1em;">-</div>
                 <small>Pembaruan Terakhir</small>
             </div>
@@ -785,29 +785,29 @@
 
         <div class="live-data">
             <div class="data-card">
-                <h4>🔥 CO₂</h4>
+                <h4>CO₂</h4>
                 <div class="data-value" id="co2Value">-</div>
                 <div class="data-unit">ppm</div>
                 <small id="co2Status" style="color: #7f8c8d; font-size: 0.85em;">-</small>
             </div>
             <div class="data-card">
-                <h4>💨 NH₃</h4>
+                <h4>NH₃</h4>
                 <div class="data-value" id="nh3Value">-</div>
                 <div class="data-unit">ppm</div>
                 <small id="nh3Status" style="color: #7f8c8d; font-size: 0.85em;">-</small>
             </div>
             <div class="data-card">
-                <h4>🍷 Alkohol</h4>
+                <h4>Alkohol</h4>
                 <div class="data-value" id="alcoholValue">-</div>
                 <div class="data-unit">ppm</div>
             </div>
             <div class="data-card">
-                <h4>⚗️ Benzena</h4>
+                <h4>Benzena</h4>
                 <div class="data-value" id="benzeneValue">-</div>
                 <div class="data-unit">ppm</div>
             </div>
             <div class="data-card">
-                <h4>🔧 Raw Sensor</h4>
+                <h4>Raw Sensor</h4>
                 <div class="data-value" id="rawValue">-</div>
                 <div class="data-unit">ADC</div>
             </div>
@@ -844,7 +844,7 @@
             </div>
 
             <div class="google-air-section">
-                <h3>🌐 Data Regional Air Quality by Google Maps API</h3>
+                <h3>Data Regional Air Quality by Google Maps API</h3>
                 <div id="googleAirQuality">
                     <div class="google-loading" id="googleLoading">
                         <div class="spinner"></div>
@@ -854,24 +854,24 @@
                     <div class="google-air-data" id="googleAirData">
                         <div class="google-summary">
                             <div class="google-summary-card">
-                                <div class="label">🏆 AQI Regional</div>
+                                <div class="label">AQI Regional</div>
                                 <div class="value" id="googleAQI">--</div>
                                 <div class="category" id="googleCategory">--</div>
                             </div>
                             <div class="google-summary-card">
-                                <div class="label">🎯 Status Dominan</div>
+                                <div class="label">Status Dominan</div>
                                 <div class="value" id="dominantPollutant">--</div>
                                 <div class="category">Polutan Utama</div>
                             </div>
                             <div class="google-summary-card">
-                                <div class="label">🌡️ Rekomendasi</div>
+                                <div class="label">Rekomendasi</div>
                                 <div class="value" id="healthRecommendation" style="font-size: 1.2em;">--</div>
                                 <div class="category">Saran Kesehatan</div>
                             </div>
                         </div>
 
                         <div class="pollutant-section">
-                            <h4>📊 Detail Konsentrasi Polutan Regional</h4>
+                            <h4>Detail Konsentrasi Polutan Regional</h4>
                             <div class="pollutant-grid">
                                 <div class="pollutant-item">
                                     <div class="label">PM2.5</div>
@@ -914,11 +914,11 @@
                                             Indonesia</span></span>
                                 </div>
                                 <div class="google-footer-item">
-                                    <span>⏰</span>
+                                    <span></span>
                                     <span><strong>Update Regional:</strong> <span id="googleUpdateTime">--</span></span>
                                 </div>
                                 <div class="google-footer-item">
-                                    <span>🔄</span>
+                                    <span></span>
                                     <span><strong>Akan di-Refresh:</strong> <span
                                             id="googleNextRefresh">--</span></span>
                                 </div>
@@ -942,7 +942,7 @@
                 </div>
 
                 <div class="recommendations" id="recommendations">
-                    <h4>💡 Rekomendasi Berdasarkan Kualitas Udara:</h4>
+                    <h4>Rekomendasi Berdasarkan Kualitas Udara:</h4>
                     <ul id="recommendationList">
                         <li>Menunggu data sensor...</li>
                     </ul>
@@ -1411,7 +1411,7 @@
             // ========================================
             // DEBUGGING INFO (Console)
             // ========================================
-            console.log('📊 Data dari Firebase:', {
+            console.log('Data dari Firebase:', {
                 co2: co2,
                 nh3: nh3,
                 alcohol: alcohol,
@@ -1531,7 +1531,7 @@
                 if (timeDiff > 60000) { // More than 1 minute
                     alerts.push({
                         type: 'alert-warning',
-                        message: `⏰ Data sensor tidak diperbarui selama ${Math.floor(timeDiff / 60000)} menit`,
+                        message: `Data sensor tidak diperbarui selama ${Math.floor(timeDiff / 60000)} menit`,
                         time: new Date().toLocaleTimeString('id-ID')
                     });
                 }
@@ -1540,13 +1540,13 @@
             if (isSmoke) {
                 alerts.push({
                     type: 'alert-item',
-                    message: `🚬 ASAP ROKOK TERDETEKSI! CSI: ${csi.toFixed(2)} - Segera periksa area sekitar`,
+                    message: `ASAP ROKOK TERDETEKSI! Index: ${csi.toFixed(2)} - Segera periksa area sekitar`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             } else if (csi > 0.5) {
                 alerts.push({
                     type: 'alert-warning',
-                    message: `⚠️ Potensi Asap - CSI: ${csi.toFixed(2)} - Perlu perhatian`,
+                    message: `Potensi Asap - Index: ${csi.toFixed(2)} - Perlu perhatian`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             }
@@ -1555,7 +1555,7 @@
             if (data.co2_ppm > 1000) {
                 alerts.push({
                     type: 'alert-warning',
-                    message: `💨 Kadar CO₂ tinggi: ${parseFloat(data.co2_ppm).toFixed(1)} ppm`,
+                    message: `Kadar CO₂ tinggi: ${parseFloat(data.co2_ppm).toFixed(1)} ppm`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             }
@@ -1563,7 +1563,7 @@
             if (data.nh3_ppm > 0.30) {
                 alerts.push({
                     type: 'alert-item',
-                    message: `⚠️ Kadar NH₃ berbahaya: ${parseFloat(data.nh3_ppm).toFixed(1)} ppm`,
+                    message: `Kadar NH₃ berbahaya: ${parseFloat(data.nh3_ppm).toFixed(1)} ppm`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             }
