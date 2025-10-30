@@ -1359,26 +1359,35 @@
             const isSmoke = data.smoke?.is_smoke || false;
             const csi = data.smoke?.csi || 0;
 
-            // Update Status Udara berdasarkan is_smoke
-            const airStatusText = isSmoke ? 'Terdeteksi Asap' : 'Udara Bersih';
+            // Update Status Udara dengan 3 tingkatan
+            let airStatusText = 'Udara Bersih';
+            let statusClass = 'status-value status-good';
+            
+            if (isSmoke) {
+                airStatusText = 'Terdeteksi Asap';
+                statusClass = 'status-value status-unhealthy';
+            } else if (csi > 0.5) {
+                airStatusText = 'Indikasi Asap';
+                statusClass = 'status-value status-moderate';
+            }
+            
             document.getElementById('airStatus').textContent = airStatusText;
-
+            
             // Update CSI
             document.getElementById('aqiValue').textContent = csi.toFixed(2);
 
-            // Color code berdasarkan is_smoke dan CSI
+            // Color code berdasarkan status
             const aqiElement = document.getElementById('aqiValue');
             const statusElement = document.getElementById('airStatus');
 
+            statusElement.className = statusClass;
+            
             if (isSmoke) {
                 aqiElement.className = 'status-value status-unhealthy';
-                statusElement.className = 'status-value status-unhealthy';
-            } else if (csi > 0.3) {
+            } else if (csi > 0.5) {
                 aqiElement.className = 'status-value status-moderate';
-                statusElement.className = 'status-value status-moderate';
             } else {
                 aqiElement.className = 'status-value status-good';
-                statusElement.className = 'status-value status-good';
             }
 
             // ========================================
@@ -1540,13 +1549,13 @@
             if (isSmoke) {
                 alerts.push({
                     type: 'alert-item',
-                    message: `ASAP ROKOK TERDETEKSI! Index: ${csi.toFixed(2)} - Segera periksa area sekitar`,
+                    message: `ASAP ROKOK TERDETEKSI! Skor: ${csi.toFixed(2)} - Segera periksa area sekitar`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             } else if (csi > 0.5) {
                 alerts.push({
                     type: 'alert-warning',
-                    message: `Potensi Asap - Index: ${csi.toFixed(2)} - Perlu perhatian`,
+                    message: `Potensi Asap - Skor: ${csi.toFixed(2)} - Perlu perhatian`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             }
@@ -1571,7 +1580,7 @@
             if (alerts.length === 0) {
                 alerts.push({
                     type: 'alert-success',
-                    message: `✅ Udara bersih - Tidak ada asap terdeteksi (CSI: ${csi.toFixed(2)})`,
+                    message: `✅ Udara bersih - Tidak ada asap terdeteksi (Skor: ${csi.toFixed(2)})`,
                     time: new Date().toLocaleTimeString('id-ID')
                 });
             }
@@ -1595,21 +1604,18 @@
             if (isSmoke) {
                 recommendations = [
                     'Asap rokok terdeteksi - segera cek area kantin',
-                    'Pastikan tidak ada yang merokok di area terlarang',
-                    'Tingkatkan ventilasi dan sirkulasi udara',
+                    'Pastikan tidak ada yang merokok di area kantin',
                     'Laporkan kepada petugas keamanan jika perlu'
                 ];
             } else if (csi > 0.5) {
                 recommendations = [
-                    'CSI sedikit meningkat - tetap waspada',
-                    'Pastikan ventilasi berjalan baik',
+                    'Skor sedikit meningkat - tetap waspada',
                     'Monitor terus kondisi udara'
                 ];
             } else {
                 recommendations = [
                     'Kualitas udara baik - tidak ada asap terdeteksi',
                     'Kondisi aman untuk beraktivitas normal',
-                    'Pertahankan ventilasi yang baik'
                 ];
             }
 
