@@ -759,12 +759,12 @@
 
         <div class="status-overview">
             <div class="status-card">
-                <h3>📊 Status Kualitas Udara</h3>
+                <h3>Status Kualitas Udara</h3>
                 <div class="status-value" id="airStatus">Loading...</div>
                 <small>Berdasarkan Semua Polutan</small>
             </div>
             <div class="status-card">
-                <h3>💨 PM2.5</h3>
+                <h3>PM2.5</h3>
                 <div class="status-value" id="aqiValue">-</div>
                 <small>μg/m³</small>
             </div>
@@ -945,7 +945,7 @@
             </div>
         </div>
 
-        <div class="timestamp">
+        <div class="timestamp" style="display: none;">
             <strong>Data Terakhir Diperbarui:</strong> <span id="updateTime">-</span>
         </div>
     </div>
@@ -972,6 +972,8 @@
         const database = firebase.database();
 
         // Connection status tracking
+        let lastDataTimestamp = null;  // ✅ TAMBAH INI
+        let deviceCheckInterval = null; // ✅ TAMBAH INI
         let firebaseConnected = false;
         let lastDataReceived = null;
         let dataTimeoutTimer = null;
@@ -1014,14 +1016,13 @@
             initializeFirebaseConnection();
             initializeCameraControl();
             fetchGoogleAirQuality();
+            
+            startDeviceStatusChecker(); // ✅ TAMBAH INI
 
             // Auto refresh every 30 seconds
             setInterval(refreshData, 30000);
             // Refresh Google data every 10 minutes
             setInterval(fetchGoogleAirQuality, 600000);
-
-            // Check connection status every 1 second
-            setInterval(checkConnectionStatus, 1000);
         });
 
         function initializeFirebaseConnection() {
@@ -1234,37 +1235,37 @@
             textElement.textContent = text;
         }
 
-        function checkConnectionStatus() {
-            if (lastDataReceived) {
-                const now = Date.now();
-                const timeDiff = now - lastDataReceived;
+        // function checkConnectionStatus() {
+        //     if (lastDataReceived) {
+        //         const now = Date.now();
+        //         const timeDiff = now - lastDataReceived;
 
-                // If no data received for 35 seconds, mark device as offline
-                if (timeDiff > 35000) {
-                    updateDeviceStatus('offline');
-                } else {
-                    updateDeviceStatus('online');
-                }
-            }
-        }
+        //         // If no data received for 35 seconds, mark device as offline
+        //         if (timeDiff > 35000) {
+        //             updateDeviceStatus('offline');
+        //         } else {
+        //             updateDeviceStatus('online');
+        //         }
+        //     }
+        // }
 
-        function updateDeviceStatus(status) {
-            const deviceDot = document.getElementById('deviceDot');
-            const deviceStatusText = document.getElementById('deviceStatusText');
-            const sensorStatus = document.getElementById('sensorStatus');
+        // function updateDeviceStatus(status) {
+        //     const deviceDot = document.getElementById('deviceDot');
+        //     const deviceStatusText = document.getElementById('deviceStatusText');
+        //     const sensorStatus = document.getElementById('sensorStatus');
 
-            if (status === 'online') {
-                deviceDot.className = 'status-dot status-online';
-                deviceStatusText.textContent = 'Online';
-                sensorStatus.textContent = 'Online';
-                sensorStatus.className = 'status-value status-good';
-            } else {
-                deviceDot.className = 'status-dot status-offline';
-                deviceStatusText.textContent = 'Offline';
-                sensorStatus.textContent = 'Offline';
-                sensorStatus.className = 'status-value status-unhealthy';
-            }
-        }
+        //     if (status === 'online') {
+        //         deviceDot.className = 'status-dot status-online';
+        //         deviceStatusText.textContent = 'Online';
+        //         sensorStatus.textContent = 'Online';
+        //         sensorStatus.className = 'status-value status-good';
+        //     } else {
+        //         deviceDot.className = 'status-dot status-offline';
+        //         deviceStatusText.textContent = 'Offline';
+        //         sensorStatus.textContent = 'Offline';
+        //         sensorStatus.className = 'status-value status-unhealthy';
+        //     }
+        // }
 
         function initializeChart() {
             const ctx = document.getElementById('airQualityChart').getContext('2d');
@@ -1354,6 +1355,30 @@
             const airQualityStatus = data.air_quality_status || "Loading...";
             const smokeDetected = data.smoke_detected || false;
             const pm25 = parseFloat(data.pm25) || 0;
+
+            if (data.timestamp) {
+                try {
+                    // Format dari IoT: "2024-01-15 10:30:45" atau "OFFLINE 10:30:45"
+                    if (data.timestamp.includes("OFFLINE")) {
+                        lastDataTimestamp = 0;
+                    } else {
+                        const parts = data.timestamp.split(' ');
+                        if (parts.length === 2) {
+                            const datePart = parts[0];
+                            const timePart = parts[1];
+                            lastDataTimestamp = new Date(datePart + 'T' + timePart).getTime();
+                        } else {
+                            lastDataTimestamp = Date.now();
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing timestamp:", e);
+                    lastDataTimestamp = Date.now();
+                }
+            }
+
+            // ✅ TAMBAH: Update device status display
+            updateDeviceStatusDisplay();
 
             // ========================================
             // UPDATE STATUS KUALITAS UDARA (Gabungan)
@@ -1445,6 +1470,43 @@
                 benzene: benzene,
                 alcohol: alcohol
             });
+        }
+
+        function updateDeviceStatusDisplay() {
+            const sensorStatus = document.getElementById('sensorStatus');
+            
+            if (!lastDataTimestamp || lastDataTimestamp === 0) {
+                sensorStatus.textContent = 'Offline';
+                sensorStatus.className = 'status-value status-unhealthy';
+                return;
+            }
+
+            const now = Date.now();
+            const timeDiff = now - lastDataTimestamp;
+            
+            // Threshold: 60 detik (2x sampling interval 30 detik)
+            const OFFLINE_THRESHOLD = 60000; // 60 detik dalam milliseconds
+
+            if (timeDiff > OFFLINE_THRESHOLD) {
+                sensorStatus.textContent = 'Offline';
+                sensorStatus.className = 'status-value status-unhealthy';
+            } else {
+                sensorStatus.textContent = 'Online';
+                sensorStatus.className = 'status-value status-good';
+                document.getElementById('lastUpdate').style.color = '';
+            }
+        }
+
+        function startDeviceStatusChecker() {
+            if (deviceCheckInterval) {
+                clearInterval(deviceCheckInterval);
+            }
+            
+            deviceCheckInterval = setInterval(() => {
+                updateDeviceStatusDisplay();
+            }, 5000); // Check setiap 5 detik
+            
+            console.log("✅ Device status checker started");
         }
 
         function updateChartData(historyData) {
